@@ -1,0 +1,7 @@
+# Traefik static config (optional overrides)
+# Primary config is via Docker labels in docker-compose
+# Use this for file-based routing if needed later
+
+http:
+  routers: {}
+  services: {}

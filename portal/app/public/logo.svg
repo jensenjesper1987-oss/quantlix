@@ -1,0 +1,24 @@
+<svg width="720" height="160" viewBox="0 0 720 160" xmlns="http://www.w3.org/2000/svg">
+
+  <defs>
+    <!-- Gradient used for logo -->
+    <linearGradient id="quantGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#A855F7"/>
+      <stop offset="100%" stop-color="#10B981"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Transparent background -->
+  <rect width="100%" height="100%" fill="none"/>
+
+  <!-- Text Logo -->
+  <text x="40" y="105"
+        font-family="Inter, Poppins, Segoe UI, Arial, sans-serif"
+        font-size="92"
+        font-weight="700"
+        fill="url(#quantGradient)"
+        letter-spacing="1">
+    Quantlix
+  </text>
+
+</svg>

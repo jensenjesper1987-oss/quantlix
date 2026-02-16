@@ -1,0 +1,53 @@
+"""Application configuration."""
+from pydantic import ConfigDict
+from pydantic_settings import BaseSettings
+
+
+class Settings(BaseSettings):
+    model_config = ConfigDict(
+        extra="ignore",
+        env_file=".env",
+        env_file_encoding="utf-8",
+    )
+
+    postgres_host: str = "localhost"
+    postgres_port: int = 5432
+    postgres_user: str = "cloud"
+    postgres_password: str = "cloud_secret"
+    postgres_db: str = "cloud"
+    redis_url: str = "redis://localhost:6379/0"
+    minio_endpoint: str = "localhost:9000"
+    minio_access_key: str = "minioadmin"
+    minio_secret_key: str = "minioadmin"
+    minio_bucket: str = "models"
+    jwt_secret: str = "dev-secret-change-me"
+
+    # Email (Heysender SMTP)
+    smtp_host: str = "smtp.heysender.com"
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from_email: str = "support@quantlix.ai"
+    smtp_from_name: str = "Quantlix"
+    app_base_url: str = "https://api.quantlix.ai"  # For verification links
+    portal_base_url: str = "https://app.quantlix.ai"  # For Stripe redirects
+    dev_return_verification_link: bool = False  # If True, include verification link in signup response (for local testing)
+
+    # Usage limits (0 = unlimited)
+    usage_limit_tokens_per_month: int = 0
+    usage_limit_compute_seconds_per_month: float = 0.0
+
+    # Stripe
+    stripe_secret_key: str = ""
+    stripe_webhook_secret: str = ""
+    stripe_price_id_starter: str = ""  # Price ID for Starter €9/mo
+    stripe_price_id_pro: str = ""  # Price ID for Pro plan (e.g. price_xxx)
+
+    @property
+    def database_url(self) -> str:
+        return (
+            f"postgresql+asyncpg://{self.postgres_user}:{self.postgres_password}"
+            f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
+        )
+
+settings = Settings()

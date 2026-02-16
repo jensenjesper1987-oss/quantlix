@@ -1,0 +1,51 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: quantlix
+
+resources:
+  - ../../base
+
+# Prod: use registry images, scale, disable mock K8s
+images:
+  - name: quantlix-api:latest
+    newName: ghcr.io/YOUR_ORG/quantlix-api  # Set via CI
+    newTag: latest
+  - name: quantlix-orchestrator:latest
+    newName: ghcr.io/YOUR_ORG/quantlix-orchestrator
+    newTag: latest
+
+patches:
+  - target:
+      kind: Deployment
+      name: api
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 2
+  - target:
+      kind: Deployment
+      name: orchestrator
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 2
+      - op: replace
+        path: /spec/template/spec/containers/0/env/5/value
+        value: "false"  # MOCK_K8S — use real K8s
+  - target:
+      kind: Ingress
+      name: quantlix
+    patch: |-
+      - op: replace
+        path: /spec/tls/0/hosts/0
+        value: api.quantlix.ai
+      - op: replace
+        path: /spec/tls/1/hosts/0
+        value: grafana.quantlix.ai
+      - op: replace
+        path: /spec/rules/0/host
+        value: api.quantlix.ai
+      - op: replace
+        path: /spec/rules/1/host
+        value: grafana.quantlix.ai

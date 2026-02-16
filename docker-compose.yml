@@ -1,0 +1,181 @@
+services:
+  # --- API Gateway ---
+  traefik:
+    image: traefik:v3.2
+    command:
+      - --api.dashboard=true
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+    ports:
+      - "80:80"
+      - "8080:8080"  # Traefik dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.localhost`)"
+      - "traefik.http.routers.traefik.service=api@internal"
+      - "traefik.http.routers.traefik.entrypoints=web"
+    profiles:
+      - full  # optional: use for full gateway routing
+
+  # --- Data Layer ---
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-cloud}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cloud_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-cloud}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cloud}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    command: server /data
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"  # Console
+    # MinIO image has no curl; rely on start_period for dependent services
+
+  # --- Application Services ---
+  api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-cloud}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cloud_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-cloud}
+      REDIS_URL: redis://redis:6379/0
+      MINIO_ENDPOINT: minio:9000
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
+      SMTP_HOST: ${SMTP_HOST:-smtp.heysender.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-support@quantlix.ai}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-Quantlix}
+      APP_BASE_URL: ${APP_BASE_URL:-http://localhost:8000}
+      DEV_RETURN_VERIFICATION_LINK: ${DEV_RETURN_VERIFICATION_LINK:-false}
+      PORTAL_BASE_URL: ${PORTAL_BASE_URL:-http://localhost:3002}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      STRIPE_PRICE_ID_STARTER: ${STRIPE_PRICE_ID_STARTER:-}
+      STRIPE_PRICE_ID_PRO: ${STRIPE_PRICE_ID_PRO:-}
+      USAGE_LIMIT_TOKENS_PER_MONTH: ${USAGE_LIMIT_TOKENS_PER_MONTH:-0}
+      USAGE_LIMIT_COMPUTE_SECONDS_PER_MONTH: ${USAGE_LIMIT_COMPUTE_SECONDS_PER_MONTH:-0}
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+
+  inference:
+    build:
+      context: ./inference
+      dockerfile: Dockerfile
+    environment:
+      PORT: "8081"
+    ports:
+      - "8081:8081"
+    # Server mode (no JOB_ID): HTTP API for orchestrator when MOCK_K8S=true
+
+  orchestrator:
+    build:
+      context: .
+      dockerfile: orchestrator/Dockerfile
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      POSTGRES_HOST: postgres
+      POSTGRES_USER: ${POSTGRES_USER:-cloud}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cloud_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-cloud}
+      MOCK_K8S: "true"
+      KUBECONFIG: ""
+      INFERENCE_URL: "http://inference:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      inference:
+        condition: service_started
+    volumes:
+      - .:/app
+    # K8s: run outside compose in prod, or use k3d/kind for local
+
+  # --- Observability ---
+  prometheus:
+    image: prom/prometheus:v2.47.0
+    volumes:
+      - ./infra/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.enable-lifecycle
+    ports:
+      - "9090:9090"
+
+  portal:
+    build:
+      context: ./portal
+      dockerfile: Dockerfile
+    environment:
+      # Browser must reach API; use host URL for local dev
+      NEXT_PUBLIC_API_URL: ${PORTAL_API_URL:-http://localhost:8000}
+    ports:
+      - "3002:3000"
+    depends_on:
+      - api
+
+  grafana:
+    image: grafana/grafana:10.2.0
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+
+volumes:
+  postgres_data:
+  minio_data:
+  prometheus_data:
+  grafana_data:

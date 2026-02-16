@@ -1,0 +1,16 @@
+# ClusterIssuer for Let's Encrypt. Cert-manager (enabled in kube-hetzner) uses this.
+# Override email in prod overlay via patch.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt
+spec:
+  acme:
+    email: admin@quantlix.ai  # Override in overlay for your email
+    server: https://acme-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: letsencrypt-account-key
+    solvers:
+      - http01:
+          ingress:
+            ingressClassName: traefik

@@ -1,0 +1,14 @@
+{
+  "/pricing/page": "app/pricing/page.js",
+  "/api/me/route": "app/api/me/route.js",
+  "/page": "app/page.js",
+  "/api/usage/metrics/route": "app/api/usage/metrics/route.js",
+  "/icon.png/route": "app/icon.png/route.js",
+  "/api/usage/route": "app/api/usage/route.js",
+  "/api/jobs/route": "app/api/jobs/route.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/api/deploy/route": "app/api/deploy/route.js",
+  "/api/status/[id]/route": "app/api/status/[id]/route.js",
+  "/api/usage/history/route": "app/api/usage/history/route.js",
+  "/docs/page": "app/docs/page.js"
+}
