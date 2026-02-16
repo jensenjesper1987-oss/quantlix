@@ -39,6 +39,7 @@ terraform apply
 
 terraform output -raw kubeconfig > kubeconfig.yaml
 export KUBECONFIG=$(pwd)/kubeconfig.yaml
+# ⚠️ Do not commit kubeconfig.yaml — it contains cluster credentials.
 ```
 
 ## Local Development (k3d)

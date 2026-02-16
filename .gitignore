@@ -9,6 +9,8 @@ infra/terraform/*.tfstate
 infra/terraform/*.tfstate.*
 infra/terraform/.terraform.lock.hcl
 infra/terraform/terraform.tfvars
+infra/terraform/*kubeconfig*.yaml
+**/kubeconfig*.yaml
 __pycache__
 *.pyc
 .pytest_cache

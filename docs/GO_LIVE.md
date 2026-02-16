@@ -220,13 +220,19 @@ For **Docker Compose**, use a reverse proxy (Traefik, Caddy, or nginx) in front 
 
 ## 7. CORS
 
-The API allows these origins (in `api/main.py`):
+The API allows these origins by default:
 
 - `https://quantlix.ai`
 - `https://app.quantlix.ai`
 - `http://localhost:3000`, `3001`, `3002` (dev)
 
-If you use `www.quantlix.ai`, add it to `allow_origins` in `api/main.py`.
+For **Vercel** or other custom domains, set `CORS_ORIGINS` (comma-separated):
+
+```bash
+CORS_ORIGINS=https://quantlix.vercel.app,https://www.quantlix.ai
+```
+
+Preview deployments use URLs like `https://project-git-branch-xxx.vercel.app`; add those if needed.
 
 ---
 
@@ -339,4 +345,4 @@ npm start
 | Verification email not received | SMTP config, spam folder, Heysender DNS |
 | Plan stays Free after payment | Webhook configured? Use "Sync subscription" on dashboard |
 | Stripe Checkout 403 | Business website URL, account activation, Stripe support |
-| CORS errors | Add portal origin to `allow_origins` in API |
+| CORS errors | Set `CORS_ORIGINS` with your portal URL (e.g. Vercel domain) |

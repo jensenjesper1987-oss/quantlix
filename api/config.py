@@ -37,6 +37,9 @@ class Settings(BaseSettings):
     usage_limit_tokens_per_month: int = 0
     usage_limit_compute_seconds_per_month: float = 0.0
 
+    # CORS (comma-separated extra origins, e.g. for Vercel: https://quantlix.vercel.app)
+    cors_origins: str = ""
+
     # Stripe
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""

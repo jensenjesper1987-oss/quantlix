@@ -16,6 +16,6 @@ We will acknowledge receipt and work with you on a fix and disclosure timeline.
 
 ## Security practices
 
-- **Secrets**: Never commit `.env`, `terraform.tfvars`, or API keys. Use `.env.example` as a template.
+- **Secrets**: Never commit `.env`, `terraform.tfvars`, `kubeconfig*.yaml`, or API keys. Use `.env.example` as a template.
 - **Dependencies**: Keep dependencies updated. Run `pip audit` and `npm audit` periodically.
 - **Production**: Use strong passwords, rotate secrets, and follow [docs/GO_LIVE.md](docs/GO_LIVE.md) for deployment.

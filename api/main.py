@@ -8,9 +8,18 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from prometheus_client import make_asgi_app
 from sqlalchemy import text
+from api.config import settings
 from api.db import Base, engine
 from api.models import APIKey, Deployment, Job, UsageRecord, User
 from api.routes import auth, billing, deploy, health, jobs, run, status, usage
+
+DEFAULT_CORS_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://localhost:3002",
+    "https://app.quantlix.ai",
+    "https://quantlix.ai",
+]
 
 
 @asynccontextmanager
@@ -39,9 +48,16 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+def _get_cors_origins() -> list[str]:
+    origins = list(DEFAULT_CORS_ORIGINS)
+    if settings.cors_origins:
+        origins.extend(o.strip() for o in settings.cors_origins.split(",") if o.strip())
+    return origins
+
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "https://app.quantlix.ai", "https://quantlix.ai"],
+    allow_origins=_get_cors_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
