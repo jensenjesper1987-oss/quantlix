@@ -13,6 +13,9 @@ network_region = "eu-central"   # eu-central (Europe) or us-east (US)
 node_type    = "cx23"   # 2 vCPU, 4GB (min for kube-hetzner)
 node_count   = 2
 
+# Traefik: redirect HTTP → HTTPS (default true)
+# traefik_redirect_to_https = true
+
 # Optional: GPU node pool (Hetzner Cloud has no GPU — uses cx33 as placeholder)
 # enable_gpu   = true
 # gpu_node_type = "cx33"   # 4 vCPU, 8GB; cx43 for larger

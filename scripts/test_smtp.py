@@ -16,7 +16,7 @@ from email.message import EmailMessage
 
 
 async def main():
-    host = os.getenv("SMTP_HOST", "smtp.heysender.com")
+    host = os.getenv("SMTP_HOST", "smtp.sweego.io")
     port = int(os.getenv("SMTP_PORT", "587"))
     user = os.getenv("SMTP_USER", "")
     password = os.getenv("SMTP_PASSWORD", "")

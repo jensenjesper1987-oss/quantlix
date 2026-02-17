@@ -143,6 +143,8 @@ class SignupResponse(BaseModel):
     message: str = Field(..., description="Status message")
     email: str = Field(..., description="Email address verification was sent to")
     verification_link: str | None = Field(None, description="Verification URL (only in dev mode when email may not arrive)")
+    api_key: str | None = Field(None, description="API key when email verification is disabled; use to log in immediately")
+    user_id: str | None = Field(None, description="User ID when api_key is returned")
 
 
 class ResendVerificationRequest(BaseModel):

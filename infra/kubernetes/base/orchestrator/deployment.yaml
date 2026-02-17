@@ -15,6 +15,7 @@ spec:
       labels:
         app: orchestrator
     spec:
+      serviceAccountName: orchestrator
       containers:
         - name: orchestrator
           image: quantlix-orchestrator:latest  # Override in overlay
@@ -40,6 +41,8 @@ spec:
               value: "true"  # Override to "false" in prod
             - name: KUBECONFIG
               value: ""
+            - name: INFERENCE_IMAGE
+              value: quantlix-inference:latest  # Override in overlay
           resources:
             requests:
               memory: "64Mi"

@@ -12,7 +12,7 @@ from kubernetes.config.config_exception import ConfigException
 
 from orchestrator.config import settings
 
-NAMESPACE = "default"
+NAMESPACE = "quantlix"
 JOB_LABELS = {"app": "inference", "managed-by": "quantlix"}
 
 

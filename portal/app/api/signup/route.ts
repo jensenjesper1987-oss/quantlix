@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const COOKIE_NAME = "quantlix_api_key";
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,7 +25,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json(data);
+    const response = NextResponse.json(data);
+    // When email verification is disabled, API returns api_key — set cookie and user is logged in
+    if (data.api_key) {
+      response.cookies.set(COOKIE_NAME, data.api_key, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 30, // 30 days
+        path: "/",
+      });
+    }
+    return response;
   } catch (e) {
     return NextResponse.json(
       { detail: "Network error" },

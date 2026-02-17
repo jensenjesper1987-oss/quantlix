@@ -103,8 +103,8 @@ async def send_idle_user_emails(db: AsyncSession) -> int:
 
 
 async def main() -> None:
-    if not settings.smtp_user or not settings.smtp_password:
-        logger.warning("SMTP not configured. Skipping trigger emails.")
+    if not settings.email_enabled or not settings.smtp_user or not settings.smtp_password:
+        logger.warning("Email disabled or SMTP not configured. Skipping trigger emails.")
         sys.exit(0)
 
     async with async_session_maker() as db:

@@ -89,7 +89,7 @@ async def signup(
 
 
 async def _do_signup(body: SignupRequest, db: AsyncSession) -> SignupResponse:
-    """Create a new user and send verification email."""
+    """Create a new user and send verification email (if email enabled)."""
     result = await db.execute(select(User).where(User.email == body.email))
     if result.scalar_one_or_none():
         raise HTTPException(
@@ -97,26 +97,45 @@ async def _do_signup(body: SignupRequest, db: AsyncSession) -> SignupResponse:
             detail="Email already registered",
         )
     token = _generate_verification_token()
+    email_enabled = settings.email_enabled
     user = User(
         email=body.email,
         password_hash=hash_password(body.password),
-        email_verified=False,
-        email_verification_token=token,
+        email_verified=not email_enabled,  # Auto-verify when email disabled
+        email_verification_token=token if email_enabled else None,
     )
     db.add(user)
     await db.commit()
 
-    try:
-        await send_verification_email(body.email, token)
-        message = "Verification email sent. Check your inbox and click the link to activate your account."
-    except Exception:
-        message = (
-            "Account created. We couldn't send the verification email (check SMTP config). "
-            "Contact support@quantlix.ai to verify your account."
+    if email_enabled:
+        try:
+            await send_verification_email(body.email, token)
+            message = "Verification email sent. Check your inbox and click the link to activate your account."
+        except Exception:
+            message = (
+                "Account created. We couldn't send the verification email (check SMTP config). "
+                "Contact support@quantlix.ai to verify your account."
+            )
+    else:
+        message = "Account created. You can log in immediately (email verification disabled)."
+        plain_key = _generate_api_key()
+        api_key = APIKey(
+            user_id=user.id,
+            key_hash=hash_api_key(plain_key),
+            name="signup",
+        )
+        db.add(api_key)
+        await db.commit()
+        return SignupResponse(
+            message=message,
+            email=body.email,
+            verification_link=None,
+            api_key=plain_key,
+            user_id=user.id,
         )
 
     verification_link = None
-    if settings.dev_return_verification_link:
+    if email_enabled and settings.dev_return_verification_link:
         verification_link = f"{settings.app_base_url.rstrip('/')}/auth/verify?token={token}"
     return SignupResponse(
         message=message,
@@ -139,7 +158,7 @@ async def login(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
         )
-    if not user.email_verified:
+    if settings.email_enabled and not user.email_verified:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Email not verified. Check your inbox for the verification link.",
@@ -200,6 +219,8 @@ async def resend_verification(
     _: None = Depends(rate_limit_resend),
 ):
     """Resend verification email."""
+    if not settings.email_enabled:
+        return {"message": "Email verification is disabled. You can log in directly."}
     result = await db.execute(select(User).where(User.email == body.email))
     user = result.scalar_one_or_none()
     if not user:
@@ -229,6 +250,8 @@ async def forgot_password(
     _: None = Depends(rate_limit_forgot_password),
 ):
     """Request password reset. Sends email with reset link if account exists."""
+    if not settings.email_enabled:
+        return {"message": "Password reset is not available. Contact support@quantlix.ai."}
     result = await db.execute(select(User).where(User.email == body.email))
     user = result.scalar_one_or_none()
     if not user or not user.password_hash:

@@ -57,8 +57,10 @@ spec:
                 secretKeyRef:
                   name: api
                   key: jwt-secret
+            - name: EMAIL_ENABLED
+              value: "false"  # Set to "true" when domain is verified
             - name: SMTP_HOST
-              value: smtp.heysender.com
+              value: smtp.sweego.io
             - name: SMTP_PORT
               value: "587"
             - name: SMTP_USER
@@ -119,5 +121,5 @@ metadata:
 type: Opaque
 stringData:
   jwt-secret: dev-secret-change-me  # Override in prod
-  smtp-user: ""  # Heysender SMTP username (leave empty to disable verification emails)
-  smtp-password: ""  # Heysender SMTP password
+  smtp-user: ""  # Sweego SMTP username (leave empty to disable verification emails)
+  smtp-password: ""  # Sweego SMTP password

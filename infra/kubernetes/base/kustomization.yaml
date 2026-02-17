@@ -11,6 +11,7 @@ resources:
   - redis/deployment.yaml
   - minio/deployment.yaml
   - api/deployment.yaml
+  - orchestrator/rbac.yaml
   - orchestrator/deployment.yaml
   - prometheus/configmap.yaml
   - prometheus/deployment.yaml

@@ -24,3 +24,13 @@ output "control_plane_ip" {
   description = "First control plane public IP (for SSH to get token if k3s_token output unavailable)"
   value       = module.kube_hetzner.control_planes_public_ipv4[0]
 }
+
+output "ingress_ip" {
+  description = "Load balancer IP for api.quantlix.ai and grafana.quantlix.ai (both use this same IP)"
+  value       = try(module.kube_hetzner.ingress_public_ipv4, module.kube_hetzner.control_planes_public_ipv4[0])
+}
+
+output "node_ips" {
+  description = "All node IPs for loading images (control plane + workers)"
+  value       = concat(module.kube_hetzner.control_planes_public_ipv4, module.kube_hetzner.agents_public_ipv4)
+}

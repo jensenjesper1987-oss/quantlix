@@ -1,3 +1,5 @@
+# Prod config but use LOCAL images (no registry).
+# Run scripts/load-images-to-nodes.sh first to load images onto cluster nodes.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
@@ -6,14 +8,13 @@ namespace: quantlix
 resources:
   - ../../base
 
-# Prod: Docker Hub (replace jesperjensen888 with your username).
-# Build & push: docker login && make build && docker tag ... && docker push ...
+# Use local image names - must be pre-loaded on nodes via load-images-to-nodes.sh
 images:
   - name: quantlix-api:latest
-    newName: docker.io/jesperjensen888/quantlix-api
+    newName: quantlix-api
     newTag: latest
   - name: quantlix-orchestrator:latest
-    newName: docker.io/jesperjensen888/quantlix-orchestrator
+    newName: quantlix-orchestrator
     newTag: latest
 
 patches:
@@ -24,6 +25,9 @@ patches:
       - op: replace
         path: /spec/replicas
         value: 2
+      - op: replace
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Never
   - target:
       kind: Deployment
       name: orchestrator
@@ -33,13 +37,10 @@ patches:
         value: 2
       - op: replace
         path: /spec/template/spec/containers/0/imagePullPolicy
-        value: IfNotPresent
+        value: Never
       - op: replace
         path: /spec/template/spec/containers/0/env/5/value
         value: "false"
-      - op: replace
-        path: /spec/template/spec/containers/0/env/7/value
-        value: docker.io/jesperjensen888/quantlix-inference:latest
   - target:
       kind: Ingress
       name: quantlix

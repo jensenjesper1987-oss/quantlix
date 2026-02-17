@@ -22,8 +22,9 @@ class Settings(BaseSettings):
     minio_bucket: str = "models"
     jwt_secret: str = "dev-secret-change-me"
 
-    # Email (Heysender SMTP)
-    smtp_host: str = "smtp.heysender.com"
+    # Email (Sweego SMTP). Set to False to disable all email until domain is verified.
+    email_enabled: bool = False
+    smtp_host: str = "smtp.sweego.io"
     smtp_port: int = 587
     smtp_user: str = ""
     smtp_password: str = ""

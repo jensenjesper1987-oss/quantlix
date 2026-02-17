@@ -9,7 +9,7 @@ Step-by-step checklist for taking Quantlix to production.
 - [ ] Domains: `quantlix.ai` (portal), `api.quantlix.ai` (API)
 - [ ] SSL/TLS certificates for both domains
 - [ ] Stripe account activated for live payments
-- [ ] Heysender (or SMTP) configured for `support@quantlix.ai`
+- [ ] Sweego (or SMTP) configured for `support@quantlix.ai`
 - [ ] Database backups configured
 - [ ] Secrets stored securely (not in git)
 
@@ -47,8 +47,8 @@ Create or update `.env` for production. **Never commit secrets to git.**
 | `STRIPE_WEBHOOK_SECRET` | Webhook signing secret | From Stripe webhook endpoint |
 | `STRIPE_PRICE_ID_STARTER` | Starter €9/mo Price ID | `price_xxx` from Stripe |
 | `STRIPE_PRICE_ID_PRO` | Pro plan Price ID | `price_xxx` from Stripe |
-| `SMTP_USER` | SMTP username | `support@quantlix.ai` |
-| `SMTP_PASSWORD` | SMTP password | From Heysender dashboard |
+| `SMTP_USER` | SMTP username | From Sweego dashboard |
+| `SMTP_PASSWORD` | SMTP password | From Sweego dashboard |
 
 ### Optional
 
@@ -114,12 +114,12 @@ stripe listen --forward-to https://api.quantlix.ai/billing/webhook
 
 ## 5. Email (SMTP)
 
-### Heysender
+### Sweego
 
-1. Add domain `quantlix.ai` in Heysender
-2. Create SMTP user for `support@quantlix.ai`
-3. Set `SMTP_USER` and `SMTP_PASSWORD` in `.env`
-4. Verify DNS records (SPF, DKIM) for deliverability
+1. Create account at [sweego.io](https://app.sweego.io/signup)
+2. Add domain `quantlix.ai` and configure DNS (SPF, DKIM, DMARC)
+3. Generate SMTP credentials in the Sweego dashboard
+4. Set `SMTP_USER` and `SMTP_PASSWORD` in `.env` (or K8s secret)
 
 ### Test
 
@@ -179,9 +179,17 @@ spec:
 
 | Type | Name | Value | Purpose |
 |------|------|-------|---------|
-| A / CNAME | `api` | Your API server IP or LB | `api.quantlix.ai` |
-| A / CNAME | `grafana` | Your cluster LB IP | `grafana.quantlix.ai` |
+| A / CNAME | `api` | Cluster LB IP (see below) | `api.quantlix.ai` |
+| A / CNAME | `grafana` | Same LB IP as `api` | `grafana.quantlix.ai` |
 | A / CNAME | `@` or `www` | Your portal/server IP | `quantlix.ai` |
+
+**Both `api` and `grafana` use the same IP** — the cluster load balancer. Traefik routes traffic by hostname (`api.quantlix.ai` → API, `grafana.quantlix.ai` → Grafana).
+
+**Get the LB IP** (Hetzner + kube-hetzner):
+```bash
+cd infra/terraform
+terraform output -raw ingress_ip
+```
 
 **Important:** DNS must point to your cluster *before* Let's Encrypt can issue certificates (HTTP-01 challenge).
 
@@ -212,7 +220,7 @@ For **Kubernetes** deployments, SSL is handled by cert-manager and the Let's Enc
 
    cert-manager will create TLS secrets (`api-quantlix-tls`, `grafana-quantlix-tls`) once DNS resolves and the HTTP-01 challenge succeeds.
 
-5. **HTTPS redirect:** If using Traefik, enable redirect in Terraform (`traefik_redirect_to_https = true`) or via Traefik IngressRoute annotations.
+5. **HTTPS redirect:** If using Traefik, set `traefik_redirect_to_https = true` in `infra/terraform/terraform.tfvars` (default) or in the module block in `main.tf`. Or configure via Traefik IngressRoute annotations.
 
 For **Docker Compose**, use a reverse proxy (Traefik, Caddy, or nginx) in front to terminate SSL with Let's Encrypt (Certbot or built-in ACME).
 
@@ -266,7 +274,20 @@ Preview deployments use URLs like `https://project-git-branch-xxx.vercel.app`; a
    export KUBECONFIG=$(pwd)/kubeconfig.yaml
    ```
 
-2. **Build and push images** to your registry
+2. **Build and push images** (replace `YOUR_DOCKERHUB_USER` with your username; use `--platform linux/amd64` on Apple Silicon):
+   ```bash
+   docker login
+   export REGISTRY=docker.io/YOUR_DOCKERHUB_USER
+   docker build --platform linux/amd64 -t $REGISTRY/quantlix-api:latest -f api/Dockerfile .
+   docker build --platform linux/amd64 -t $REGISTRY/quantlix-orchestrator:latest -f orchestrator/Dockerfile .
+   docker build --platform linux/amd64 -t $REGISTRY/quantlix-inference:latest -f inference/Dockerfile ./inference
+   docker push $REGISTRY/quantlix-api:latest
+   docker push $REGISTRY/quantlix-orchestrator:latest
+   docker push $REGISTRY/quantlix-inference:latest
+   ```
+   Update `infra/kubernetes/overlays/prod/kustomization.yaml` with your registry path (lines 12–17 and 43).
+
+   **Alternative (ttl.sh, 24h expiry, for testing):** Use `ttl.sh/quantlix-api-quantlix:24h` etc. and push without auth.
 
 3. **Deploy:**
    ```bash
@@ -342,7 +363,24 @@ npm start
 
 | Issue | Check |
 |-------|-------|
-| Verification email not received | SMTP config, spam folder, Heysender DNS |
+| Verification email not received | SMTP config, spam folder, Sweego DNS |
 | Plan stays Free after payment | Webhook configured? Use "Sync subscription" on dashboard |
 | Stripe Checkout 403 | Business website URL, account activation, Stripe support |
 | CORS errors | Set `CORS_ORIGINS` with your portal URL (e.g. Vercel domain) |
+| API/Orchestrator ImagePullBackOff | **Option A (no registry):** Run `./infra/kubernetes/scripts/load-images-to-nodes.sh` then `kubectl apply -k infra/kubernetes/overlays/prod-local`. Requires SSH to nodes. **Option B:** Push to Docker Hub/GHCR, update `overlays/prod/kustomization.yaml`, apply prod overlay. |
+
+---
+
+## Admin: Remove a User
+
+To delete a user and all related data (api_keys, deployments, jobs, usage_records):
+
+```bash
+# From your machine (with prod DB env vars or port-forward)
+python scripts/delete_user.py user@example.com
+
+# Or inside the API pod
+kubectl exec -it deploy/api -n quantlix -- python scripts/delete_user.py user@example.com
+```
+
+**Note:** Stripe customer records are not deleted. Cancel any active subscriptions in Stripe first if needed.

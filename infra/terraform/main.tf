@@ -74,6 +74,9 @@ module "kube_hetzner" {
   # Load balancer (required by module)
   load_balancer_type     = "lb11"
   load_balancer_location = var.location
+
+  # Traefik: redirect HTTP → HTTPS (default true)
+  traefik_redirect_to_https = var.traefik_redirect_to_https
 }
 
 variable "hcloud_token" {

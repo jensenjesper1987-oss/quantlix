@@ -69,3 +69,9 @@ variable "gpu_location" {
   type        = string
   default     = ""
 }
+
+variable "traefik_redirect_to_https" {
+  description = "Redirect HTTP to HTTPS in Traefik ingress (recommended for production)"
+  type        = bool
+  default     = true
+}

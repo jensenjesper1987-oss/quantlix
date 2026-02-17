@@ -1,4 +1,4 @@
-"""Email sending via Heysender SMTP."""
+"""Email sending via Sweego SMTP."""
 import logging
 
 import aiosmtplib
@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 def _is_email_configured() -> bool:
-    return bool(settings.smtp_user and settings.smtp_password)
+    return bool(settings.email_enabled and settings.smtp_user and settings.smtp_password)
 
 
 async def send_verification_email(to_email: str, token: str) -> bool:

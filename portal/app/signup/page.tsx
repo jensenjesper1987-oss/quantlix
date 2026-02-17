@@ -1,16 +1,19 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 export default function SignupPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [verificationLink, setVerificationLink] = useState<string | null>(null);
+  const [redirecting, setRedirecting] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -30,11 +33,22 @@ export default function SignupPage() {
       }
       setSuccess(true);
       if (data.verification_link) setVerificationLink(data.verification_link);
+      // When email verification is disabled, API returns api_key — cookie is set, redirect to dashboard
+      if (data.api_key) {
+        setRedirecting(true);
+        router.push("/dashboard");
+        router.refresh();
+        return;
+      }
     } catch {
       setError("Network error");
     } finally {
       setLoading(false);
     }
+  }
+
+  if (redirecting) {
+    return null; // Redirecting to dashboard after auto-login
   }
 
   if (success) {

@@ -16,12 +16,18 @@ spec:
       labels:
         app: postgres
     spec:
+      securityContext:
+        fsGroup: 999  # postgres user in postgres:16 (Debian)
       containers:
         - name: postgres
-          image: postgres:16-alpine
+          image: postgres:16
           ports:
             - containerPort: 5432
           env:
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+            - name: POSTGRES_INITDB_ARGS
+              value: "--auth-host=scram-sha-256"
             - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
@@ -35,15 +41,22 @@ spec:
             - name: POSTGRES_DB
               value: cloud
           volumeMounts:
+            - name: dshm
+              mountPath: /dev/shm
             - name: data
               mountPath: /var/lib/postgresql/data
           resources:
             requests:
-              memory: "256Mi"
+              memory: "512Mi"
               cpu: "100m"
             limits:
-              memory: "512Mi"
+              memory: "1Gi"
               cpu: "500m"
+      volumes:
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 256Mi
   volumeClaimTemplates:
     - metadata:
         name: data
