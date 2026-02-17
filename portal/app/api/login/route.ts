@@ -6,9 +6,14 @@ const COOKIE_NAME = "quantlix_api_key";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    const forwardedFor = request.headers.get("x-forwarded-for");
+    const realIp = request.headers.get("x-real-ip");
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (forwardedFor) headers["X-Forwarded-For"] = forwardedFor;
+    if (realIp) headers["X-Real-IP"] = realIp;
     const res = await fetch(`${API_URL}/auth/login`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify(body),
     });
     const data = await res.json().catch(() => ({}));
