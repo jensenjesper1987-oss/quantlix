@@ -58,7 +58,7 @@ spec:
                   name: api
                   key: jwt-secret
             - name: EMAIL_ENABLED
-              value: "false"  # Set to "true" when domain is verified
+              value: "true"
             - name: SMTP_HOST
               value: smtp.sweego.io
             - name: SMTP_PORT

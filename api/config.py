@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     jwt_secret: str = "dev-secret-change-me"
 
     # Email (Sweego SMTP). Set to False to disable all email until domain is verified.
-    email_enabled: bool = False
+    email_enabled: bool = True
     smtp_host: str = "smtp.sweego.io"
     smtp_port: int = 587
     smtp_user: str = ""
