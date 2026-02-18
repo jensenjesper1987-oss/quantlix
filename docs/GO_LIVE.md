@@ -326,7 +326,7 @@ npm start
 - [ ] `https://api.quantlix.ai/docs` loads Swagger UI
 - [ ] Signup works and sends verification email
 - [ ] Login works after verification
-- [ ] Upgrade to Pro works (Stripe Checkout)
+- [ ] Upgrade to Pro works (Stripe Checkout). If it fails: check API has STRIPE_SECRET_KEY, STRIPE_PRICE_ID_STARTER, STRIPE_PRICE_ID_PRO; portal has NEXT_PUBLIC_API_URL or PORTAL_API_URL=https://api.quantlix.ai
 - [ ] Webhook updates plan (or use "Sync subscription" on dashboard)
 
 ### Portal

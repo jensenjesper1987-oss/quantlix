@@ -302,6 +302,8 @@ function DashboardContent() {
 
   const success = searchParams.get("success");
   const canceled = searchParams.get("canceled");
+  const checkoutError = searchParams.get("error") === "checkout";
+  const checkoutCode = searchParams.get("code");
 
   if (loading) {
     return (
@@ -330,6 +332,14 @@ function DashboardContent() {
       {canceled && (
         <div className="mb-6 rounded-lg border border-amber-800/50 bg-amber-950/30 p-4 text-amber-400">
           Checkout was canceled.
+        </div>
+      )}
+      {checkoutError && (
+        <div className="mb-6 rounded-lg border border-red-800/50 bg-red-950/30 p-4 text-red-400">
+          {checkoutCode === "auth" && "Please log in again to upgrade."}
+          {checkoutCode === "config" && "Billing is not configured. Contact support."}
+          {checkoutCode === "network" && "Could not reach the API. Try again later."}
+          {(!checkoutCode || checkoutCode === "failed") && "Checkout failed. Please try again or contact support."}
         </div>
       )}
 
