@@ -16,7 +16,7 @@ export default function Home() {
               Quantlix is the simplest way to run AI workloads without cloud
               complexity.
             </p>
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-wrap items-center gap-4">
               <Link href="/signup">
                 <Button variant="primary" size="lg">
                   Start Building
@@ -31,10 +31,9 @@ export default function Home() {
                 href="https://discord.gg/wHWzQ8XE"
                 target="_blank"
                 rel="noopener noreferrer"
+                className="text-slate-400 hover:text-slate-200 underline underline-offset-4 transition-colors"
               >
-                <Button variant="secondary" size="lg">
-                  Join Discord
-                </Button>
+                @Welcome to join Discord
               </a>
             </div>
           </div>
