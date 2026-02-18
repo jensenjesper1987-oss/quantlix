@@ -102,8 +102,8 @@ quantlix deploy qx-example
 quantlix run <deployment_id> -i '{"prompt": "Hello!"}'`
     : `pip install quantlix
 quantlix login
-quantlix deploy qx-example
-quantlix run <deployment_id> -i '{"prompt": "Hello!"}'`;
+quantlix deploy qx-example --api-key <your_api_key>
+quantlix run <deployment_id> -i '{"prompt": "Hello!"}' --api-key <your_api_key>`;
 
   async function copyCurl() {
     if (curlCmd) {
@@ -218,6 +218,9 @@ quantlix run <deployment_id> -i '{"prompt": "Hello!"}'`;
             <div>
               <p className="mb-2 text-sm font-medium text-slate-300">
                 3. CLI quickstart
+              </p>
+              <p className="mb-2 text-xs text-slate-500">
+                API key required. The first run activates the deployment and moves it from pending to ready.
               </p>
               <div className="relative rounded border border-slate-700 bg-slate-800/50 p-4 font-mono text-xs text-slate-300">
                 <pre className="overflow-x-auto whitespace-pre-wrap break-all">

@@ -33,9 +33,8 @@ export default function Home() {
             <pre className="overflow-x-auto text-slate-300">
 {`$ pip install quantlix
 $ quantlix login
-$ quantlix deploy qx-example   # preloaded demo model
-
-Deployment ready. Run inference in one curl.`}
+$ quantlix deploy qx-example --api-key <your_api_key>
+$ quantlix run <id> -i '{"prompt":"Hello"}' --api-key <your_api_key>`}
             </pre>
           </div>
         </div>

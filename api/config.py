@@ -22,8 +22,12 @@ class Settings(BaseSettings):
     minio_bucket: str = "models"
     jwt_secret: str = "dev-secret-change-me"
 
-    # Email (Sweego SMTP). Set to False to disable all email until domain is verified.
+    # Email (Sweego). Set to False to disable all email until domain is verified.
+    # Use SWEEGO_API_KEY for HTTP API (recommended in K8s; avoids SMTP port blocking).
+    # Otherwise use SMTP with smtp_user/smtp_password.
     email_enabled: bool = True
+    sweego_api_key: str = ""  # When set, use Sweego HTTP API instead of SMTP
+    sweego_auth_type: str = "api_token"  # "api_token" (Api-Token), "api_key" (Api-Key), or "bearer" (Authorization: Bearer)
     smtp_host: str = "smtp.sweego.io"
     smtp_port: int = 587
     smtp_user: str = ""

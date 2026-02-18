@@ -7,7 +7,7 @@ from typing import Any
 
 import httpx
 
-DEFAULT_BASE_URL = "http://localhost:8000"
+DEFAULT_BASE_URL = "https://api.quantlix.ai"
 
 
 @dataclass
@@ -151,7 +151,7 @@ class QuantlixCloudClient:
     def login(email: str, password: str, base_url: str = DEFAULT_BASE_URL) -> AuthResult:
         """Log in. Returns API key for X-API-Key header."""
         url = base_url.rstrip("/")
-        with httpx.Client() as client:
+        with httpx.Client(timeout=30.0) as client:
             r = client.post(
                 f"{url}/auth/login",
                 json={"email": email, "password": password},

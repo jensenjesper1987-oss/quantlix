@@ -109,11 +109,17 @@ async def _do_signup(body: SignupRequest, db: AsyncSession) -> SignupResponse:
 
     if email_enabled:
         try:
-            await send_verification_email(body.email, token)
-            message = "Verification email sent. Check your inbox and click the link to activate your account."
+            sent = await send_verification_email(body.email, token)
+            if sent:
+                message = "Verification email sent. Check your inbox and click the link to activate your account."
+            else:
+                message = (
+                    "Account created. Email not configured (set SWEEGO_API_KEY or SMTP credentials). "
+                    "Contact support@quantlix.ai to verify your account."
+                )
         except Exception:
             message = (
-                "Account created. We couldn't send the verification email (check SMTP config). "
+                "Account created. We couldn't send the verification email (check email config). "
                 "Contact support@quantlix.ai to verify your account."
             )
     else:
@@ -234,8 +240,10 @@ async def resend_verification(
 
     try:
         await send_verification_email(body.email, token)
-    except Exception:
-        pass  # Still return success; user can use dev link if enabled
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).exception("Resend verification email failed for %s: %s", body.email, e)
+        # Still return success; don't reveal whether email exists or send failed
 
     out: dict = {"message": "Verification email sent. Check your inbox."}
     if settings.dev_return_verification_link:

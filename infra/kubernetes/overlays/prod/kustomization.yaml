@@ -25,11 +25,8 @@ patches:
         path: /spec/replicas
         value: 2
       - op: replace
-        path: /spec/template/spec/containers/0/env/11/value
-        value: prod-mta-06.swg-srv.net
-      - op: replace
-        path: /spec/template/spec/containers/0/env/12/value
-        value: "2525"
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Always
   - target:
       kind: Deployment
       name: orchestrator

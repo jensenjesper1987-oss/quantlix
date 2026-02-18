@@ -7,11 +7,14 @@ import os
 from pathlib import Path
 from typing import Optional
 
-# Load .env from project root so CLOUD_API_KEY is available
+# Load .env: project root, cwd, then ~/.quantlix.env (last wins for user overrides)
 try:
     from dotenv import load_dotenv
-    env_path = Path(__file__).resolve().parents[1] / ".env"  # QUANTLIX_API_KEY, QUANTLIX_API_URL
-    load_dotenv(env_path)
+    env_path = Path(__file__).resolve().parents[1] / ".env"
+    if env_path.exists():
+        load_dotenv(env_path)
+    load_dotenv()
+    load_dotenv(Path.home() / ".quantlix.env", override=True)
 except ImportError:
     pass
 
@@ -210,9 +213,12 @@ def login(
     email: str = typer.Option(..., "--email", "-e", prompt="Email", help="Your email"),
     password: str = typer.Option(..., "--password", "-p", prompt="Password", hide_input=True, help="Password"),
     base_url: Optional[str] = typer.Option(None, "--url", "-u", envvar="QUANTLIX_API_URL"),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Show API URL being used"),
 ):
     """Log in. Returns API key — set QUANTLIX_API_KEY."""
     url = base_url or os.environ.get("QUANTLIX_API_URL", "").strip() or DEFAULT_BASE_URL
+    if verbose:
+        console.print(f"[dim]API URL: {url}[/dim]")
     try:
         result = QuantlixCloudClient.login(email=email, password=password, base_url=url)
         console.print("[green]Logged in[/green]")
@@ -222,6 +228,11 @@ def login(
         console.print(f"  [bold]QUANTLIX_API_KEY={result.api_key}[/bold]")
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
+        if "Connection reset" in str(e) or "54" in str(e) or "refused" in str(e).lower():
+            console.print(f"[yellow]API URL: {url}[/yellow]")
+            if "localhost" in url:
+                console.print("[yellow]Using localhost — is the API running? Try: docker compose up -d[/yellow]")
+            console.print("[dim]For prod: quantlix login --url https://api.quantlix.ai[/dim]")
         raise typer.Exit(1)
 
 

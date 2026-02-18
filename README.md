@@ -19,14 +19,17 @@ cd cloud
 cp .env.example .env
 docker compose up -d
 
-# 2. Create account (or use dev seed)
+# 2. Create account and get API key
 pip install -e .
 quantlix signup --email you@example.com --password YourSecurePassword123!
 # Verify email, then:
 quantlix login --email you@example.com --password YourSecurePassword123!
+# Set the API key (required for deploy/run):
+export QUANTLIX_API_KEY="qxl_xxx"  # from login output
 
 # 3. Deploy and run
 quantlix deploy qx-example
+# Run inference to activate (first run moves deployment from pending to ready)
 quantlix run <deployment_id> -i '{"prompt": "Hello!"}'
 ```
 

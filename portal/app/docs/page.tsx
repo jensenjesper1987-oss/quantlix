@@ -51,20 +51,20 @@ export default function DocsPage() {
         <section className="rounded-lg border border-slate-800 bg-slate-900/30 p-6">
           <h2 className="font-medium text-slate-200">3. CLI quickstart</h2>
           <p className="mt-2 text-sm text-slate-500">
-            Install, authenticate, deploy the demo model, and run inference.
+            Install, authenticate (API key required), deploy the demo model, and run inference. The first run activates the deployment and moves it from pending to ready.
           </p>
           <div className="relative mt-4 rounded border border-slate-700 bg-slate-800/50 p-4 font-mono text-sm text-slate-300">
             <CopyButton
               text={`pip install quantlix
 quantlix login
-quantlix deploy qx-example
-quantlix run <deployment_id> -i '{"prompt": "Hello!"}'`}
+quantlix deploy qx-example --api-key <your_api_key>
+quantlix run <deployment_id> -i '{"prompt": "Hello!"}' --api-key <your_api_key>`}
             />
             <pre className="overflow-x-auto whitespace-pre-wrap">
 {`pip install quantlix
 quantlix login
-quantlix deploy qx-example
-quantlix run <deployment_id> -i '{"prompt": "Hello!"}'`}
+quantlix deploy qx-example --api-key <your_api_key>
+quantlix run <deployment_id> -i '{"prompt": "Hello!"}' --api-key <your_api_key>`}
             </pre>
           </div>
         </section>

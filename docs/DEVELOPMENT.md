@@ -120,10 +120,10 @@ See [infra/kubernetes/README.md](../infra/kubernetes/README.md) for details.
 
 ```bash
 # Install: pip install -e .
-export QUANTLIX_API_KEY="your-api-key"   # or use --api-key
+export QUANTLIX_API_KEY="your-api-key"   # required for deploy/run; or use --api-key
 
 quantlix deploy my-llama-7b
-quantlix run <deployment_id> -i '{"prompt": "Hello"}'
+quantlix run <deployment_id> -i '{"prompt": "Hello"}'   # first run moves deployment pending → ready
 quantlix status <deployment_id_or_job_id>
 quantlix usage
 ```

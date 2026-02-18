@@ -58,11 +58,27 @@ spec:
                   name: api
                   key: jwt-secret
             - name: EMAIL_ENABLED
-              value: "true"
+              valueFrom:
+                secretKeyRef:
+                  name: api
+                  key: email-enabled
+                  optional: true
             - name: SMTP_HOST
               value: smtp.sweego.io
             - name: SMTP_PORT
               value: "587"
+            - name: SWEEGO_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: api
+                  key: sweego-api-key
+                  optional: true
+            - name: SWEEGO_AUTH_TYPE
+              valueFrom:
+                secretKeyRef:
+                  name: api
+                  key: sweego-auth-type
+                  optional: true
             - name: SMTP_USER
               valueFrom:
                 secretKeyRef:
@@ -112,14 +128,3 @@ spec:
   ports:
     - port: 8000
       targetPort: 8000
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: api
-  namespace: quantlix
-type: Opaque
-stringData:
-  jwt-secret: dev-secret-change-me  # Override in prod
-  smtp-user: ""  # Sweego SMTP username (leave empty to disable verification emails)
-  smtp-password: ""  # Sweego SMTP password

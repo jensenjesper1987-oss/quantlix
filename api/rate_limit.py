@@ -1,8 +1,11 @@
 """Redis-based rate limiting for auth endpoints."""
+from __future__ import annotations
+
 from fastapi import Request
 from redis.asyncio import Redis
 
 from api.queue import get_redis
+from api.schemas import ResendVerificationRequest
 
 RATE_LIMIT_SIGNUP = 5
 RATE_LIMIT_SIGNUP_WINDOW = 3600  # 1 hour
@@ -100,15 +103,26 @@ async def rate_limit_verify(request: Request) -> None:
         await redis.aclose()
 
 
-async def rate_limit_resend(request: Request) -> None:
-    """Rate limit resend: 3 attempts per hour per IP."""
+def _email_key_safe(email: str) -> str:
+    """Make email safe for Redis key (no colons etc)."""
+    return email.strip().lower().replace("@", "_at_")
+
+
+async def rate_limit_resend(request: Request, body: ResendVerificationRequest) -> None:
+    """Rate limit resend: 3 attempts per hour per IP and per email."""
     ip = _client_ip(request)
-    key = f"rate_limit:auth:resend:{ip}"
+    email_safe = _email_key_safe(body.email)
     redis = await get_redis()
     try:
         await _check_rate_limit(
             redis,
-            key,
+            f"rate_limit:auth:resend:ip:{ip}",
+            limit=RATE_LIMIT_RESEND,
+            window=RATE_LIMIT_RESEND_WINDOW,
+        )
+        await _check_rate_limit(
+            redis,
+            f"rate_limit:auth:resend:email:{email_safe}",
             limit=RATE_LIMIT_RESEND,
             window=RATE_LIMIT_RESEND_WINDOW,
         )

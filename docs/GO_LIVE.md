@@ -47,8 +47,7 @@ Create or update `.env` for production. **Never commit secrets to git.**
 | `STRIPE_WEBHOOK_SECRET` | Webhook signing secret | From Stripe webhook endpoint |
 | `STRIPE_PRICE_ID_STARTER` | Starter €9/mo Price ID | `price_xxx` from Stripe |
 | `STRIPE_PRICE_ID_PRO` | Pro plan Price ID | `price_xxx` from Stripe |
-| `SMTP_USER` | SMTP username | From Sweego dashboard |
-| `SMTP_PASSWORD` | SMTP password | From Sweego dashboard |
+| `SWEEGO_API_KEY` or `SMTP_USER`+`SMTP_PASSWORD` | Sweego API key (recommended in K8s) or SMTP credentials | From Sweego dashboard |
 
 ### Optional
 
@@ -112,14 +111,14 @@ stripe listen --forward-to https://api.quantlix.ai/billing/webhook
 
 ---
 
-## 5. Email (SMTP)
+## 5. Email (Sweego)
 
 ### Sweego
 
 1. Create account at [sweego.io](https://app.sweego.io/signup)
 2. Add domain `quantlix.ai` and configure DNS (SPF, DKIM, DMARC)
-3. Generate SMTP credentials in the Sweego dashboard
-4. Set `SMTP_USER` and `SMTP_PASSWORD` in `.env` (or K8s secret)
+3. **For Kubernetes (recommended):** Generate an API key in the Sweego dashboard and set `SWEEGO_API_KEY` in `.env`. The HTTP API uses port 443 and avoids SMTP port blocking in cloud clusters.
+4. **For Docker Compose / local:** You can use either `SWEEGO_API_KEY` or SMTP credentials (`SMTP_USER`, `SMTP_PASSWORD`).
 
 ### Test
 
@@ -207,12 +206,18 @@ For **Kubernetes** deployments, SSL is handled by cert-manager and the Let's Enc
    kubectl apply -k infra/kubernetes/base
    ```
 
-3. **Deploy prod overlay** (patches Ingress hosts to `api.quantlix.ai`, `grafana.quantlix.ai`):
+3. **Create/update API secret** from `.env` (required before first prod deploy):
+   ```bash
+   python infra/kubernetes/scripts/sync-api-secret-from-env.py
+   ```
+   This reads `JWT_SECRET`, `SWEEGO_API_KEY`, `SMTP_USER`, `SMTP_PASSWORD` from `.env` and syncs to the cluster. Run after changing email credentials.
+
+4. **Deploy prod overlay** (patches Ingress hosts to `api.quantlix.ai`, `grafana.quantlix.ai`):
    ```bash
    kubectl apply -k infra/kubernetes/overlays/prod
    ```
 
-4. **Verify certificates:**
+5. **Verify certificates:**
    ```bash
    kubectl get certificates -n quantlix
    kubectl describe certificate api-quantlix-tls -n quantlix
@@ -220,7 +225,7 @@ For **Kubernetes** deployments, SSL is handled by cert-manager and the Let's Enc
 
    cert-manager will create TLS secrets (`api-quantlix-tls`, `grafana-quantlix-tls`) once DNS resolves and the HTTP-01 challenge succeeds.
 
-5. **HTTPS redirect:** If using Traefik, set `traefik_redirect_to_https = true` in `infra/terraform/terraform.tfvars` (default) or in the module block in `main.tf`. Or configure via Traefik IngressRoute annotations.
+6. **HTTPS redirect:** If using Traefik, set `traefik_redirect_to_https = true` in `infra/terraform/terraform.tfvars` (default) or in the module block in `main.tf`. Or configure via Traefik IngressRoute annotations.
 
 For **Docker Compose**, use a reverse proxy (Traefik, Caddy, or nginx) in front to terminate SSL with Let's Encrypt (Certbot or built-in ACME).
 
@@ -363,11 +368,60 @@ npm start
 
 | Issue | Check |
 |-------|-------|
-| Verification email not received | SMTP config, spam folder, Sweego DNS |
+| Verification email not received | See [Email debugging](#email-debugging) below |
 | Plan stays Free after payment | Webhook configured? Use "Sync subscription" on dashboard |
 | Stripe Checkout 403 | Business website URL, account activation, Stripe support |
 | CORS errors | Set `CORS_ORIGINS` with your portal URL (e.g. Vercel domain) |
 | API/Orchestrator ImagePullBackOff | **Option A (no registry):** Run `./infra/kubernetes/scripts/load-images-to-nodes.sh` then `kubectl apply -k infra/kubernetes/overlays/prod-local`. Requires SSH to nodes. **Option B:** Push to Docker Hub/GHCR, update `overlays/prod/kustomization.yaml`, apply prod overlay. |
+
+### Email debugging
+
+1. **Verify API key is set in the cluster:**
+   ```bash
+   kubectl exec deploy/api -n quantlix -- env | grep -E "SWEEGO|SMTP"
+   ```
+   You should see `SWEEGO_API_KEY` (or `SMTP_USER`/`SMTP_PASSWORD`). If empty, run `python infra/kubernetes/scripts/sync-api-secret-from-env.py` and ensure `.env` has `SWEEGO_API_KEY=...`.
+
+2. **Test email from inside the cluster:**
+   ```bash
+   kubectl exec deploy/api -n quantlix -- python scripts/test_smtp.py
+   ```
+   If this fails, check the error (invalid API key, unverified domain, etc.). If it succeeds, the email should arrive at `SMTP_FROM_EMAIL` (support@quantlix.ai by default).
+
+3. **Check API logs during signup:**
+   ```bash
+   kubectl logs -f deploy/api -n quantlix
+   ```
+   Look for "Sending email to X via Sweego API" or "Sweego API error: status=...".
+
+4. **Spam folder** – Check spam/junk. Sweego requires verified domain (SPF, DKIM) for good deliverability.
+
+5. **401 Unauthorized** – Sweego supports both `Api-Key` and `Authorization: Bearer` auth. If you get 401 with `Api-Key`, try adding to `.env`: `SWEEGO_AUTH_TYPE=bearer`, then sync the secret and restart. Also verify the key is an API key (not SMTP credentials) from the [Sweego dashboard](https://learn.sweego.io/docs/auth/api_keys).
+
+6. **429 Too Many Requests (resend)** – The portal often shares an IP (e.g. Vercel), so reset **all** resend limits:
+   ```bash
+   kubectl exec deploy/redis -n quantlix -- redis-cli EVAL "local k=redis.call('keys','rate_limit:auth:resend:*');if #k>0 then return redis.call('del',unpack(k)) else return 0 end" 0
+   ```
+
+---
+
+## Deploy API Updates
+
+When you change the API code (e.g. email logic, new features), rebuild and deploy:
+
+```bash
+make deploy-prod-api
+```
+
+This builds the API image, pushes to Docker Hub, and restarts the deployment. The prod overlay uses `imagePullPolicy: Always`, so Kubernetes always pulls the latest image from the registry.
+
+**Manual steps** (if you prefer):
+```bash
+make build
+docker tag quantlix-api:latest docker.io/jesperjensen888/quantlix-api:latest
+docker push docker.io/jesperjensen888/quantlix-api:latest
+kubectl rollout restart deploy/api -n quantlix
+```
 
 ---
 

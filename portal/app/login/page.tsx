@@ -13,12 +13,14 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
   const [verificationLink, setVerificationLink] = useState<string | null>(null);
+  const [resendSuccess, setResendSuccess] = useState(false);
 
   async function handleResend() {
     if (!email) return;
     setResendLoading(true);
     setError("");
     setVerificationLink(null);
+    setResendSuccess(false);
     try {
       const res = await fetch("/api/resend-verification", {
         method: "POST",
@@ -32,6 +34,7 @@ export default function LoginPage() {
       }
       if (data.verification_link) setVerificationLink(data.verification_link);
       setError("");
+      setResendSuccess(true);
     } catch {
       setError("Network error");
     } finally {
@@ -42,6 +45,7 @@ export default function LoginPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setResendSuccess(false);
     setLoading(true);
     try {
       const res = await fetch("/api/login", {
@@ -105,6 +109,9 @@ export default function LoginPage() {
               className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-2 text-slate-200 placeholder-slate-400 focus:border-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-600"
             />
           </div>
+          {resendSuccess && (
+            <p className="text-sm text-green-400">Verification email sent. Check your inbox (and spam folder).</p>
+          )}
           {error && (
             <div className="space-y-2">
               <p className="text-sm text-red-400">{error}</p>

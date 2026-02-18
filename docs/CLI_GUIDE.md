@@ -39,10 +39,17 @@ Copy the printed API key and set it in step 4.
 
 ## 4. Set your API key
 
-Add to `.env` or export in your shell:
+**Required.** All deploy, run, and status commands need an API key. Add to `.env` or export in your shell:
 
 ```bash
 export QUANTLIX_API_KEY="dev-api-key-xxxxxxxx"
+```
+
+Or pass it per command: `quantlix deploy my-model --api-key qxl_xxx`
+
+**Local dev only** (default is `https://api.quantlix.ai`):
+
+```bash
 export QUANTLIX_API_URL="http://localhost:8000"
 ```
 
@@ -52,9 +59,11 @@ export QUANTLIX_API_URL="http://localhost:8000"
 quantlix deploy my-model
 ```
 
-You'll get a `deployment_id` — copy it.
+You'll get a `deployment_id` — copy it. The deployment starts as `pending`.
 
 ## 6. Run inference
+
+**Trigger a run to activate the deployment.** The first run moves the deployment from `pending` to `ready`:
 
 ```bash
 quantlix run <deployment_id> -i '{"prompt": "Hello world"}'
@@ -74,6 +83,8 @@ You'll get a `job_id`.
 ```bash
 quantlix status <deployment_id>   # or <job_id>
 ```
+
+Deployments show `pending` until the first run completes; then they become `ready`.
 
 ## 8. View usage
 
@@ -99,7 +110,7 @@ Usage limits (tokens, compute seconds per month) can be configured via env vars.
 | `quantlix create-api-key` | Create a new API key |
 | `quantlix revoke-api-key` | Revoke an API key by ID |
 | `quantlix rotate-api-key` | Create new key, revoke current |
-| `quantlix deploy <model_id>` | `quantlix deploy llama-7b` |
-| `quantlix run <deployment_id> -i <json>` | `quantlix run abc123 -i '{"prompt":"Hi"}'` |
+| `quantlix deploy <model_id>` | `quantlix deploy llama-7b` (needs API key) |
+| `quantlix run <deployment_id> -i <json>` | `quantlix run abc123 -i '{"prompt":"Hi"}'` (triggers first run → deployment becomes ready) |
 | `quantlix status <id>` | `quantlix status abc123` |
 | `quantlix usage` | `quantlix usage` |
