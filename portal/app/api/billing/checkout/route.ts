@@ -6,7 +6,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 export async function POST(request: NextRequest) {
   const apiKey = request.cookies.get(COOKIE_NAME)?.value;
   if (!apiKey) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    return NextResponse.redirect(new URL("/login", request.url), 303);
   }
 
   let plan = "pro";
@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
   const data = await res.json().catch(() => ({}));
 
   if (!res.ok || !data.url) {
-    return NextResponse.redirect(new URL("/?error=checkout", request.url));
+    return NextResponse.redirect(new URL("/?error=checkout", request.url), 303);
   }
-  return NextResponse.redirect(data.url);
+  return NextResponse.redirect(data.url, 303);
 }
