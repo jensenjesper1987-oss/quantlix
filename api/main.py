@@ -2,15 +2,28 @@
 Quantlix — REST API
 POST /auth/signup, POST /auth/login, POST /deploy, POST /run, GET /status, GET /usage
 """
+import asyncio
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from prometheus_client import make_asgi_app
-from sqlalchemy import text
+from sqlalchemy import func, select, text
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from api.config import settings
-from api.db import Base, engine
-from api.models import APIKey, Deployment, Job, UsageRecord, User
+from api.db import Base, engine, async_session_maker
+from api.metrics import (
+    quantlix_usage_compute_seconds_total,
+    quantlix_usage_gpu_seconds_total,
+    quantlix_usage_jobs_total,
+    quantlix_usage_tokens_total,
+    quantlix_users_by_plan,
+    quantlix_users_total,
+    quantlix_users_verified,
+)
+from api.models import UsageRecord, User
 from api.routes import auth, billing, deploy, health, jobs, run, status, usage
 
 DEFAULT_CORS_ORIGINS = [
@@ -20,6 +33,38 @@ DEFAULT_CORS_ORIGINS = [
     "https://app.quantlix.ai",
     "https://quantlix.ai",
 ]
+
+
+async def _refresh_metrics(session: AsyncSession) -> None:
+    """Query DB and update Prometheus gauges for users, usage, tiers."""
+    # Users total and by plan
+    total = await session.scalar(select(func.count(User.id)))
+    quantlix_users_total.set(total or 0)
+
+    verified = await session.scalar(select(func.count(User.id)).where(User.email_verified == True))
+    quantlix_users_verified.set(verified or 0)
+
+    by_plan = await session.execute(
+        select(User.plan, func.count(User.id)).where(User.plan.is_not(None)).group_by(User.plan)
+    )
+    for plan, count in by_plan:
+        quantlix_users_by_plan.labels(plan=plan or "free").set(count)
+
+    # Usage this month
+    start_of_month = datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    usage = await session.execute(
+        select(
+            func.coalesce(func.sum(UsageRecord.tokens_used), 0),
+            func.coalesce(func.sum(UsageRecord.compute_seconds), 0),
+            func.coalesce(func.sum(UsageRecord.gpu_seconds), 0),
+            func.count(UsageRecord.id),
+        ).where(UsageRecord.created_at >= start_of_month)
+    )
+    row = usage.one()
+    quantlix_usage_tokens_total.set(int(row[0]))
+    quantlix_usage_compute_seconds_total.set(float(row[1]))
+    quantlix_usage_gpu_seconds_total.set(float(row[2]))
+    quantlix_usage_jobs_total.set(int(row[3]))
 
 
 @asynccontextmanager
@@ -38,8 +83,30 @@ async def lifespan(app: FastAPI):
         await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS first_deploy_email_sent BOOLEAN DEFAULT FALSE"))
         await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS near_limit_email_sent_at TIMESTAMPTZ"))
         await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS idle_email_sent_at TIMESTAMPTZ"))
-    yield
-    await engine.dispose()
+
+    async def update_metrics():
+        """Periodically update Prometheus metrics for users, usage, tiers."""
+        while True:
+            try:
+                async with async_session_maker() as session:
+                    await _refresh_metrics(session)
+            except Exception:
+                pass
+            await asyncio.sleep(60)
+
+    # Initial refresh + background task
+    async with async_session_maker() as session:
+        await _refresh_metrics(session)
+    task = asyncio.create_task(update_metrics())
+    try:
+        yield
+    finally:
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
+        await engine.dispose()
 
 
 app = FastAPI(

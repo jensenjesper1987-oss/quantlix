@@ -27,6 +27,15 @@ export default function Home() {
                   View Docs
                 </Button>
               </Link>
+              <a
+                href="https://discord.gg/wHWzQ8XE"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Button variant="secondary" size="lg">
+                  Join Discord
+                </Button>
+              </a>
             </div>
           </div>
           <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-4 font-mono text-sm">
