@@ -8,6 +8,13 @@ data:
     auth_enabled: false
     server:
       http_listen_port: 3100
+    query_scheduler:
+      max_outstanding_requests_per_tenant: 2048
+    frontend:
+      max_outstanding_per_tenant: 2048
+    limits_config:
+      max_query_parallelism: 32
+      split_queries_by_interval: 15m
     common:
       instance_addr: 127.0.0.1
       path_prefix: /loki

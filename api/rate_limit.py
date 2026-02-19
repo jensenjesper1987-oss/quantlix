@@ -21,6 +21,8 @@ RATE_LIMIT_FORGOT_PASSWORD = 3
 RATE_LIMIT_FORGOT_PASSWORD_WINDOW = 3600  # 1 hour
 RATE_LIMIT_RESET_PASSWORD = 10
 RATE_LIMIT_RESET_PASSWORD_WINDOW = 900  # 15 minutes
+RATE_LIMIT_DEMO = 20
+RATE_LIMIT_DEMO_WINDOW = 3600  # 1 hour per IP
 
 
 def _client_ip(request: Request) -> str:
@@ -98,6 +100,22 @@ async def rate_limit_verify(request: Request) -> None:
             key,
             limit=RATE_LIMIT_VERIFY,
             window=RATE_LIMIT_VERIFY_WINDOW,
+        )
+    finally:
+        await redis.aclose()
+
+
+async def rate_limit_demo(request: Request) -> None:
+    """Rate limit demo: 20 attempts per hour per IP."""
+    ip = _client_ip(request)
+    key = f"rate_limit:demo:{ip}"
+    redis = await get_redis()
+    try:
+        await _check_rate_limit(
+            redis,
+            key,
+            limit=RATE_LIMIT_DEMO,
+            window=RATE_LIMIT_DEMO_WINDOW,
         )
     finally:
         await redis.aclose()

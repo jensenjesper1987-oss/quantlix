@@ -32,7 +32,7 @@ from api.metrics import (
     quantlix_users_verified,
 )
 from api.models import UsageRecord, User
-from api.routes import auth, billing, deploy, deployments, health, jobs, run, status, usage
+from api.routes import auth, billing, deploy, deployments, demo, health, jobs, run, status, usage
 
 DEFAULT_CORS_ORIGINS = [
     "http://localhost:3000",
@@ -40,6 +40,7 @@ DEFAULT_CORS_ORIGINS = [
     "http://localhost:3002",
     "https://www.quantlix.ai",
     "https://quantlix.ai",
+    "https://quantlix-alpha.vercel.app",
 ]
 
 
@@ -178,6 +179,7 @@ app.mount("/metrics", metrics_app)
 
 # Routes
 app.include_router(health.router, tags=["health"])
+app.include_router(demo.router, prefix="/demo", tags=["demo"])
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(deploy.router, prefix="/deploy", tags=["deploy"])
 app.include_router(deployments.router, prefix="/deployments", tags=["deployments"])
