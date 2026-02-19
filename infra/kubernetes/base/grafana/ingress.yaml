@@ -1,7 +1,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: quantlix
+  name: grafana
   namespace: quantlix
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
@@ -10,16 +10,16 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - api.quantlix.local  # Override in overlay
-      secretName: api-quantlix-tls
+        - grafana.quantlix.local  # Override in overlay
+      secretName: grafana-quantlix-tls
   rules:
-    - host: api.quantlix.local  # Override in overlay
+    - host: grafana.quantlix.local
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: api
+                name: grafana
                 port:
-                  number: 8000
+                  number: 3000

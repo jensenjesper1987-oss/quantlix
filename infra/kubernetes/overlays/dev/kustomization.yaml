@@ -8,3 +8,11 @@ resources:
   - api-secret.yaml
 
 # Dev: local images, MOCK_K8S=true (default in base)
+patches:
+  - target:
+      kind: Deployment
+      name: grafana
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/env/0/value
+        value: "http://grafana.quantlix.local"

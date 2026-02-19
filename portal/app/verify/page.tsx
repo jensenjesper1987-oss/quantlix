@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
-export default function VerifyPage() {
+function VerifyContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
@@ -77,5 +77,26 @@ export default function VerifyPage() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function VerifyPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="mx-auto flex min-h-[60vh] max-w-sm items-center justify-center px-4">
+          <div className="w-full space-y-8 text-center">
+            <h1 className="text-2xl font-semibold text-slate-100">
+              Verifying your email…
+            </h1>
+            <div className="flex justify-center">
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-600 border-t-purple-500" />
+            </div>
+          </div>
+        </main>
+      }
+    >
+      <VerifyContent />
+    </Suspense>
   );
 }

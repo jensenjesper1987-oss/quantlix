@@ -51,11 +51,15 @@ patches:
         path: /spec/tls/0/hosts/0
         value: api.quantlix.ai
       - op: replace
-        path: /spec/tls/1/hosts/0
+        path: /spec/rules/0/host
+        value: api.quantlix.ai
+  - target:
+      kind: Ingress
+      name: grafana
+    patch: |-
+      - op: replace
+        path: /spec/tls/0/hosts/0
         value: grafana.quantlix.ai
       - op: replace
         path: /spec/rules/0/host
-        value: api.quantlix.ai
-      - op: replace
-        path: /spec/rules/1/host
         value: grafana.quantlix.ai
