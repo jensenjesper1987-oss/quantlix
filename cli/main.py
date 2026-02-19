@@ -242,8 +242,9 @@ def deploy(
     model_path: Optional[str] = typer.Option(None, "--model-path", "-p", help="MinIO path to model files"),
     config: Optional[str] = typer.Option(None, "--config", "-c", help="JSON config (e.g. '{\"replicas\": 1}')"),
     gpu: bool = typer.Option(False, "--gpu", "-g", help="Deploy with GPU (Pro: 2h/month included, extra at €0.50/hr)"),
+    update: Optional[str] = typer.Option(None, "--update", help="Deployment ID to update (creates new revision)"),
     api_key: Optional[str] = typer.Option(None, "--api-key", "-k", envvar="QUANTLIX_API_KEY"),
-    base_url: Optional[str] = typer.Option(None, "--url", "-u", envvar="QUANTLIX_API_URL"),
+    base_url: Optional[str] = typer.Option(None, "--url", envvar="QUANTLIX_API_URL"),
 ):
     """Deploy a model to the inference platform."""
     client = _get_client(api_key=api_key, base_url=base_url)
@@ -251,10 +252,99 @@ def deploy(
     if gpu:
         config_dict["gpu"] = True
     try:
-        result = client.deploy(model_id=model_id, model_path=model_path, config=config_dict)
-        console.print(f"[green]Deployment queued[/green]")
+        result = client.deploy(
+            model_id=model_id,
+            model_path=model_path,
+            config=config_dict,
+            deployment_id=update,
+        )
+        console.print(f"[green]{result.message}[/green]")
         console.print(f"  deployment_id: [bold]{result.deployment_id}[/bold]")
         console.print(f"  status: {result.status}")
+        if getattr(result, "revision", None):
+            console.print(f"  revision: {result.revision}")
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        raise typer.Exit(1)
+
+
+@app.command("deployments")
+def deployments_list(
+    limit: int = typer.Option(50, "--limit", "-n", help="Max deployments to list"),
+    api_key: Optional[str] = typer.Option(None, "--api-key", "-k", envvar="QUANTLIX_API_KEY"),
+    base_url: Optional[str] = typer.Option(None, "--url", envvar="QUANTLIX_API_URL"),
+):
+    """List deployments with revision counts."""
+    client = _get_client(api_key=api_key, base_url=base_url)
+    try:
+        deployments = client.list_deployments(limit=limit)
+        if not deployments:
+            console.print("[dim]No deployments yet. Run: quantlix deploy my-model[/dim]")
+            return
+        table = Table(show_header=True, header_style="bold")
+        table.add_column("ID", style="dim")
+        table.add_column("Model", style="")
+        table.add_column("Status", style="")
+        table.add_column("Revisions", justify="right")
+        table.add_column("Updated", style="dim")
+        for d in deployments:
+            table.add_row(
+                d["id"][:8] + "…",
+                d["model_id"],
+                d["status"],
+                str(d.get("revision_count", 0)),
+                str(d.get("updated_at", ""))[:19] if d.get("updated_at") else "",
+            )
+        console.print(table)
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        raise typer.Exit(1)
+
+
+@app.command()
+def revisions(
+    deployment_id: str = typer.Argument(..., help="Deployment ID"),
+    api_key: Optional[str] = typer.Option(None, "--api-key", "-k", envvar="QUANTLIX_API_KEY"),
+    base_url: Optional[str] = typer.Option(None, "--url", envvar="QUANTLIX_API_URL"),
+):
+    """List revisions for a deployment."""
+    client = _get_client(api_key=api_key, base_url=base_url)
+    try:
+        revs = client.list_revisions(deployment_id)
+        if not revs:
+            console.print("[dim]No revisions. Update with: quantlix deploy my-model --update <deployment_id>[/dim]")
+            return
+        table = Table(show_header=True, header_style="bold")
+        table.add_column("Revision", justify="right")
+        table.add_column("Model", style="")
+        table.add_column("Created", style="dim")
+        for r in revs:
+            table.add_row(
+                str(r["revision_number"]),
+                r["model_id"],
+                str(r.get("created_at", ""))[:19] if r.get("created_at") else "",
+            )
+        console.print(table)
+        console.print("[dim]Rollback: quantlix rollback <deployment_id> <revision>[/dim]")
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        raise typer.Exit(1)
+
+
+@app.command()
+def rollback(
+    deployment_id: str = typer.Argument(..., help="Deployment ID"),
+    revision: int = typer.Argument(..., help="Revision number to rollback to"),
+    api_key: Optional[str] = typer.Option(None, "--api-key", "-k", envvar="QUANTLIX_API_KEY"),
+    base_url: Optional[str] = typer.Option(None, "--url", envvar="QUANTLIX_API_URL"),
+):
+    """Rollback deployment to a previous revision."""
+    client = _get_client(api_key=api_key, base_url=base_url)
+    try:
+        result = client.rollback(deployment_id, revision)
+        console.print(f"[green]{result.get('message', 'Rolled back')}[/green]")
+        console.print(f"  deployment_id: [bold]{deployment_id}[/bold]")
+        console.print(f"  revision: {revision}")
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
         raise typer.Exit(1)

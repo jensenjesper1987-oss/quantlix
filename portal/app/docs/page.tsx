@@ -70,6 +70,18 @@ quantlix run <deployment_id> -i '{"prompt": "Hello!"}' --api-key <your_api_key>`
         </section>
 
         <section className="rounded-lg border border-slate-800 bg-slate-900/30 p-6">
+          <h2 className="font-medium text-slate-200">CLI reference</h2>
+          <p className="mt-2 text-sm text-slate-500">
+            Full list of CLI commands with options and explanations.
+          </p>
+          <Link href="/cli" className="mt-4 inline-block">
+            <Button variant="outline" size="sm">
+              View CLI commands
+            </Button>
+          </Link>
+        </section>
+
+        <section className="rounded-lg border border-slate-800 bg-slate-900/30 p-6">
           <h2 className="font-medium text-slate-200">API reference</h2>
           <p className="mt-2 text-sm text-slate-500">
             Full REST API documentation with OpenAPI spec.

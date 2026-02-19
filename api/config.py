@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     smtp_from_email: str = "support@quantlix.ai"
     smtp_from_name: str = "Quantlix"
     app_base_url: str = "https://api.quantlix.ai"  # For verification links
-    portal_base_url: str = "https://app.quantlix.ai"  # For Stripe redirects
+    portal_base_url: str = "https://www.quantlix.ai"  # For Stripe redirects
     dev_return_verification_link: bool = False  # If True, include verification link in signup response (for local testing)
 
     # Usage limits (0 = unlimited)

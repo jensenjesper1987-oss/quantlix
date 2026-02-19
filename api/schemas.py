@@ -51,12 +51,47 @@ class DeployRequest(BaseModel):
     model_id: str = Field(..., description="Model identifier (e.g. my-llama-7b)")
     model_path: str | None = Field(None, description="MinIO path to model files (e.g. models/user123/llama)")
     config: dict = Field(default_factory=dict, description="Deployment config: replicas, resources, etc.")
+    deployment_id: str | None = Field(None, description="Update existing deployment (creates new revision)")
 
 
 class DeployResponse(BaseModel):
     deployment_id: str
     status: str
     message: str = "Deployment queued"
+    revision: int | None = Field(None, description="Revision number if updated")
+
+
+# --- Deployments (list, revisions, rollback) ---
+class DeploymentListItem(BaseModel):
+    id: str
+    model_id: str
+    status: str
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+    revision_count: int = 0
+
+
+class DeploymentListResponse(BaseModel):
+    deployments: list[DeploymentListItem]
+
+
+class DeploymentRevisionItem(BaseModel):
+    revision_number: int
+    model_id: str
+    model_path: str | None = None
+    config: dict
+    created_at: datetime | None = None
+
+
+class DeploymentRevisionListResponse(BaseModel):
+    deployment_id: str
+    revisions: list[DeploymentRevisionItem]
+
+
+class RollbackResponse(BaseModel):
+    deployment_id: str
+    revision: int
+    message: str = "Rolled back"
 
 
 # --- Run ---

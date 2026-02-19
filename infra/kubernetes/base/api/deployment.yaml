@@ -97,6 +97,32 @@ spec:
               value: Quantlix
             - name: APP_BASE_URL
               value: https://api.quantlix.ai  # Override for your deployment
+            - name: PORTAL_BASE_URL
+              value: https://www.quantlix.ai  # Stripe success/cancel redirects
+            - name: STRIPE_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: api
+                  key: stripe-secret-key
+                  optional: true
+            - name: STRIPE_WEBHOOK_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: api
+                  key: stripe-webhook-secret
+                  optional: true
+            - name: STRIPE_PRICE_ID_STARTER
+              valueFrom:
+                secretKeyRef:
+                  name: api
+                  key: stripe-price-id-starter
+                  optional: true
+            - name: STRIPE_PRICE_ID_PRO
+              valueFrom:
+                secretKeyRef:
+                  name: api
+                  key: stripe-price-id-pro
+                  optional: true
           resources:
             requests:
               memory: "128Mi"

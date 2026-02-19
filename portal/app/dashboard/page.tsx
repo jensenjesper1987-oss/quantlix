@@ -243,6 +243,206 @@ quantlix run <deployment_id> -i '{"prompt": "Hello!"}' --api-key <your_api_key>`
   );
 }
 
+type DeploymentItem = {
+  id: string;
+  model_id: string;
+  status: string;
+  created_at: string | null;
+  updated_at: string | null;
+  revision_count: number;
+};
+
+type RevisionItem = {
+  revision_number: number;
+  model_id: string;
+  model_path: string | null;
+  config: Record<string, unknown>;
+  created_at: string | null;
+};
+
+function DeploymentsSection() {
+  const [deployments, setDeployments] = useState<DeploymentItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [revisions, setRevisions] = useState<Record<string, RevisionItem[]>>({});
+  const [loadingRevisions, setLoadingRevisions] = useState<Set<string>>(new Set());
+  const [rollbackLoading, setRollbackLoading] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const refresh = useCallback(() => {
+    fetch("/api/deployments")
+      .then((r) => (r.ok ? r.json() : { deployments: [] }))
+      .then((data) => setDeployments(data.deployments || []))
+      .catch(() => setDeployments([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  async function loadRevisions(id: string) {
+    if (revisions[id]) return;
+    setLoadingRevisions((s) => new Set(s).add(id));
+    try {
+      const res = await fetch(`/api/deployments/${id}/revisions`);
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setRevisions((prev) => ({ ...prev, [id]: data.revisions || [] }));
+      }
+    } finally {
+      setLoadingRevisions((s) => {
+        const next = new Set(s);
+        next.delete(id);
+        return next;
+      });
+    }
+  }
+
+  function toggleExpand(id: string) {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else {
+        next.add(id);
+        loadRevisions(id);
+      }
+      return next;
+    });
+  }
+
+  async function handleRollback(deploymentId: string, revision: number) {
+    const key = `${deploymentId}-${revision}`;
+    setRollbackLoading(key);
+    setError(null);
+    try {
+      const res = await fetch(
+        `/api/deployments/${deploymentId}/rollback?revision=${revision}`,
+        { method: "POST" }
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || "Rollback failed");
+      refresh();
+      setRevisions((prev) => ({ ...prev, [deploymentId]: [] }));
+      setExpanded((prev) => {
+        const next = new Set(prev);
+        next.delete(deploymentId);
+        return next;
+      });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Rollback failed");
+    } finally {
+      setRollbackLoading(null);
+    }
+  }
+
+  if (loading) {
+    return (
+      <section className="mb-8 rounded-lg border border-slate-800 bg-slate-900/30 p-6">
+        <h2 className="mb-4 text-lg font-medium text-slate-200">Deployments</h2>
+        <div className="text-sm text-slate-500">Loading deployments...</div>
+      </section>
+    );
+  }
+
+  if (deployments.length === 0) {
+    return (
+      <section className="mb-8 rounded-lg border border-slate-800 bg-slate-900/30 p-6">
+        <h2 className="mb-4 text-lg font-medium text-slate-200">Deployments</h2>
+        <p className="text-sm text-slate-500">
+          No deployments yet. Deploy a model via the quickstart above or CLI.
+        </p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="mb-8 rounded-lg border border-slate-800 bg-slate-900/30 p-6">
+      <h2 className="mb-4 text-lg font-medium text-slate-200">Deployments</h2>
+      <p className="mb-4 text-sm text-slate-500">
+        View revisions and rollback to a previous configuration.
+      </p>
+      {error && (
+        <div className="mb-4 rounded border border-red-800/50 bg-red-950/30 p-3 text-sm text-red-400">
+          {error}
+        </div>
+      )}
+      <div className="space-y-2">
+        {deployments.map((d) => (
+          <div
+            key={d.id}
+            className="rounded border border-slate-700/50 bg-slate-800/30"
+          >
+            <button
+              type="button"
+              className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-slate-700/30"
+              onClick={() => toggleExpand(d.id)}
+            >
+              <div className="flex items-center gap-3">
+                <span className="font-mono text-sm text-slate-200">{d.model_id}</span>
+                <span className="rounded-full border border-slate-600 px-2 py-0.5 text-xs text-slate-400">
+                  {d.status}
+                </span>
+                {d.revision_count > 0 && (
+                  <span className="text-xs text-slate-500">
+                    {d.revision_count} revision{d.revision_count !== 1 ? "s" : ""}
+                  </span>
+                )}
+              </div>
+              <span className="text-slate-500">
+                {expanded.has(d.id) ? "▼" : "▶"}
+              </span>
+            </button>
+            {expanded.has(d.id) && (
+              <div className="border-t border-slate-700/50 px-4 py-3">
+                {loadingRevisions.has(d.id) ? (
+                  <div className="text-sm text-slate-500">Loading revisions...</div>
+                ) : (revisions[d.id]?.length ?? 0) > 0 ? (
+                  <div className="space-y-2">
+                    {revisions[d.id].map((r) => (
+                      <div
+                        key={r.revision_number}
+                        className="flex items-center justify-between rounded bg-slate-900/50 px-3 py-2"
+                      >
+                        <div>
+                          <span className="font-medium text-slate-300">
+                            Revision {r.revision_number}
+                          </span>
+                          <span className="ml-2 text-xs text-slate-500">
+                            {r.model_id}
+                            {r.created_at
+                              ? ` · ${new Date(r.created_at).toLocaleString()}`
+                              : ""}
+                          </span>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs"
+                          onClick={() => handleRollback(d.id, r.revision_number)}
+                          disabled={rollbackLoading === `${d.id}-${r.revision_number}`}
+                        >
+                          {rollbackLoading === `${d.id}-${r.revision_number}`
+                            ? "Rolling back..."
+                            : "Rollback"}
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-500">
+                    No revision history. Update this deployment via CLI to create revisions.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function ApiKeyDisplay({ keyValue }: { keyValue: string }) {
   const [copied, setCopied] = useState(false);
   const [visible, setVisible] = useState(false);
@@ -348,6 +548,8 @@ function DashboardContent() {
         apiUrl={process.env.NEXT_PUBLIC_API_URL || "https://api.quantlix.ai"}
         plan={user.plan}
       />
+
+      <DeploymentsSection />
 
       <section className="mb-8 rounded-lg border border-slate-800 bg-slate-900/30 p-6">
         <h2 className="mb-4 text-lg font-medium text-slate-200">Performance</h2>

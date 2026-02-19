@@ -24,13 +24,13 @@ from api.metrics import (
     quantlix_users_verified,
 )
 from api.models import UsageRecord, User
-from api.routes import auth, billing, deploy, health, jobs, run, status, usage
+from api.routes import auth, billing, deploy, deployments, health, jobs, run, status, usage
 
 DEFAULT_CORS_ORIGINS = [
     "http://localhost:3000",
     "http://localhost:3001",
     "http://localhost:3002",
-    "https://app.quantlix.ai",
+    "https://www.quantlix.ai",
     "https://quantlix.ai",
 ]
 
@@ -83,6 +83,7 @@ async def lifespan(app: FastAPI):
         await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS first_deploy_email_sent BOOLEAN DEFAULT FALSE"))
         await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS near_limit_email_sent_at TIMESTAMPTZ"))
         await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS idle_email_sent_at TIMESTAMPTZ"))
+        await conn.run_sync(Base.metadata.create_all)  # Create deployment_revisions if missing
 
     async def update_metrics():
         """Periodically update Prometheus metrics for users, usage, tiers."""
@@ -138,6 +139,7 @@ app.mount("/metrics", metrics_app)
 app.include_router(health.router, tags=["health"])
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(deploy.router, prefix="/deploy", tags=["deploy"])
+app.include_router(deployments.router, prefix="/deployments", tags=["deployments"])
 app.include_router(run.router, prefix="/run", tags=["run"])
 app.include_router(status.router, prefix="/status", tags=["status"])
 app.include_router(jobs.router, prefix="/jobs", tags=["jobs"])

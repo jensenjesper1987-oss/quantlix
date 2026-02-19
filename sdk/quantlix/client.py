@@ -15,6 +15,7 @@ class DeployResult:
     deployment_id: str
     status: str
     message: str
+    revision: int | None = None
 
 
 @dataclass
@@ -165,17 +166,21 @@ class QuantlixCloudClient:
         model_id: str,
         model_path: str | None = None,
         config: dict[str, Any] | None = None,
+        deployment_id: str | None = None,
     ) -> DeployResult:
-        """Deploy a model to the inference platform."""
+        """Deploy a model. Pass deployment_id to update existing (creates new revision)."""
+        payload: dict[str, Any] = {
+            "model_id": model_id,
+            "model_path": model_path,
+            "config": config or {},
+        }
+        if deployment_id:
+            payload["deployment_id"] = deployment_id
         with httpx.Client() as client:
             r = client.post(
                 f"{self.base_url}/deploy",
                 headers=self._headers(),
-                json={
-                    "model_id": model_id,
-                    "model_path": model_path,
-                    "config": config or {},
-                },
+                json=payload,
             )
             r.raise_for_status()
             data = r.json()
@@ -183,6 +188,7 @@ class QuantlixCloudClient:
                 deployment_id=data["deployment_id"],
                 status=data["status"],
                 message=data.get("message", ""),
+                revision=data.get("revision"),
             )
 
     def run(self, deployment_id: str, input_data: dict | list | Any) -> RunResult:
@@ -221,6 +227,38 @@ class QuantlixCloudClient:
                 tokens_used=data.get("tokens_used"),
                 compute_seconds=data.get("compute_seconds"),
             )
+
+    def list_deployments(self, limit: int = 50) -> list[dict[str, Any]]:
+        """List deployments with revision counts."""
+        with httpx.Client() as client:
+            r = client.get(
+                f"{self.base_url}/deployments",
+                headers=self._headers(),
+                params={"limit": limit},
+            )
+            r.raise_for_status()
+            return r.json().get("deployments", [])
+
+    def list_revisions(self, deployment_id: str) -> list[dict[str, Any]]:
+        """List revisions for a deployment."""
+        with httpx.Client() as client:
+            r = client.get(
+                f"{self.base_url}/deployments/{deployment_id}/revisions",
+                headers=self._headers(),
+            )
+            r.raise_for_status()
+            return r.json().get("revisions", [])
+
+    def rollback(self, deployment_id: str, revision: int) -> dict[str, Any]:
+        """Rollback deployment to a previous revision."""
+        with httpx.Client() as client:
+            r = client.post(
+                f"{self.base_url}/deployments/{deployment_id}/rollback",
+                headers=self._headers(),
+                params={"revision": revision},
+            )
+            r.raise_for_status()
+            return r.json()
 
     def list_api_keys(self) -> list[APIKeyInfo]:
         """List API keys for the current user."""
