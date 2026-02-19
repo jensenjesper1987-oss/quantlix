@@ -68,7 +68,7 @@ const COMMANDS = [
       {
         cmd: "quantlix deploy <model_id>",
         opts: ["--model-path, -p", "--config, -c", "--gpu, -g", "--update", "--api-key, -k", "--url"],
-        desc: "Deploy a model to the inference platform. Use --update <deployment_id> to update an existing deployment (creates a new revision).",
+        desc: "Deploy a model to the inference platform. Default is CPU; add --gpu for GPU. Use --update <deployment_id> to update an existing deployment (creates a new revision).",
       },
       {
         cmd: "quantlix deployments",
@@ -127,9 +127,30 @@ export default function CliPage() {
         </code>
       </p>
 
-      <div className="mt-4 rounded-lg border border-slate-700/50 bg-slate-800/30 p-4">
-        <p className="text-sm text-slate-400">
-          Most commands require an API key. Set{" "}
+      <div className="mt-8 space-y-4">
+        <div className="rounded-lg border border-slate-700/50 bg-slate-800/30 p-4">
+          <h3 className="mb-2 text-sm font-medium text-slate-300">CPU vs GPU</h3>
+          <p className="mb-3 text-sm text-slate-400">
+            By default, models run on <strong className="text-slate-300">CPU</strong>. Add{" "}
+            <code className="rounded bg-slate-700/50 px-1 font-mono text-xs">--gpu</code> or{" "}
+            <code className="rounded bg-slate-700/50 px-1 font-mono text-xs">-g</code> to deploy with GPU for faster inference.
+          </p>
+          <div className="space-y-2 font-mono text-xs">
+            <p className="text-slate-400">
+              <span className="text-slate-500"># CPU (default)</span>
+              <br />
+              <span className="text-slate-300">quantlix deploy my-llama-7b</span>
+            </p>
+            <p className="text-slate-400">
+              <span className="text-slate-500"># GPU (Pro: 2h/month included, extra at €0.50/hr)</span>
+              <br />
+              <span className="text-slate-300">quantlix deploy my-llama-7b --gpu</span>
+            </p>
+          </div>
+        </div>
+        <div className="rounded-lg border border-slate-700/50 bg-slate-800/30 p-4">
+          <p className="text-sm text-slate-400">
+            Most commands require an API key. Set{" "}
           <code className="rounded bg-slate-700/50 px-1 font-mono text-xs">
             QUANTLIX_API_KEY
           </code>{" "}
@@ -147,6 +168,7 @@ export default function CliPage() {
           </code>
           .
         </p>
+        </div>
       </div>
 
       <div className="mt-12 space-y-12">

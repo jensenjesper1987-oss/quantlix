@@ -15,5 +15,9 @@ resources:
   - orchestrator/deployment.yaml
   - prometheus/configmap.yaml
   - prometheus/deployment.yaml
+  - loki/deployment.yaml
+  - promtail/configmap.yaml
+  - promtail/deployment.yaml
+  - grafana/dashboards-configmap.yaml
   - grafana/deployment.yaml
   - ingress.yaml

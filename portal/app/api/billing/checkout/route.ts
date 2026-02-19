@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { COOKIE_NAME } from "@/lib/api";
+import { logError } from "@/lib/logger";
 
 // Use runtime env for server-side; NEXT_PUBLIC_ is baked in at build
 const API_URL =
@@ -32,8 +33,7 @@ export async function POST(request: NextRequest) {
     });
     data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
   } catch (err) {
-    // Network error, API unreachable
-    console.error("[checkout] API request failed:", err);
+    logError("checkout", "API request failed", err);
     return NextResponse.redirect(new URL("/dashboard?error=checkout&code=network", request.url), 303);
   }
 

@@ -45,6 +45,9 @@ class Settings(BaseSettings):
     # CORS (comma-separated extra origins, e.g. for Vercel: https://quantlix.vercel.app)
     cors_origins: str = ""
 
+    # Logging (DEBUG, INFO, WARNING, ERROR)
+    log_level: str = "INFO"
+
     # Stripe
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""

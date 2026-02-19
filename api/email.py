@@ -84,7 +84,7 @@ async def send_verification_email(to_email: str, token: str) -> bool:
         logger.warning("Email not configured; skipping verification email to %s", to_email)
         return False
 
-    verify_url = f"{settings.app_base_url.rstrip('/')}/auth/verify?token={token}"
+    verify_url = f"{settings.portal_base_url.rstrip('/')}/verify?token={token}"
     subject = "Verify your Quantlix account"
     body = f"""Hello,
 

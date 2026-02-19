@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { COOKIE_NAME } from "@/lib/api";
+import { logError } from "@/lib/logger";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
@@ -13,14 +14,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url), 303);
   }
 
-  const res = await fetch(`${API_URL}/billing/create-portal-session`, {
-    method: "POST",
-    headers: { "X-API-Key": apiKey, "Content-Type": "application/json" },
-  });
-  const data = await res.json().catch(() => ({}));
+  try {
+    const res = await fetch(`${API_URL}/billing/create-portal-session`, {
+      method: "POST",
+      headers: { "X-API-Key": apiKey, "Content-Type": "application/json" },
+    });
+    const data = await res.json().catch(() => ({}));
 
-  if (!res.ok || !data.url) {
+    if (!res.ok || !data.url) {
+      logError("billing-portal", `API error: ${res.status}`, data.detail || data);
+      return NextResponse.redirect(new URL("/dashboard?error=portal", request.url), 303);
+    }
+    return NextResponse.redirect(data.url, 303);
+  } catch (e) {
+    logError("billing-portal", "API request failed", e);
     return NextResponse.redirect(new URL("/dashboard?error=portal", request.url), 303);
   }
-  return NextResponse.redirect(data.url, 303);
 }

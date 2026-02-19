@@ -36,6 +36,10 @@ spec:
           volumeMounts:
             - name: datasources
               mountPath: /etc/grafana/provisioning/datasources
+            - name: dashboards-provider
+              mountPath: /etc/grafana/provisioning/dashboards
+            - name: dashboards
+              mountPath: /var/lib/grafana/dashboards
           resources:
             requests:
               memory: "128Mi"
@@ -47,6 +51,12 @@ spec:
         - name: datasources
           configMap:
             name: grafana-datasources
+        - name: dashboards-provider
+          configMap:
+            name: grafana-dashboards-config
+        - name: dashboards
+          configMap:
+            name: grafana-dashboards
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -62,6 +72,12 @@ data:
         access: proxy
         url: http://prometheus:9090
         isDefault: true
+      - name: Loki
+        type: loki
+        uid: loki
+        access: proxy
+        url: http://loki:3100
+        isDefault: false
 ---
 apiVersion: v1
 kind: Secret

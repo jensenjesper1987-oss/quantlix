@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logError } from "@/lib/logger";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const COOKIE_NAME = "quantlix_api_key";
@@ -38,6 +39,7 @@ export async function POST(request: NextRequest) {
     }
     return response;
   } catch (e) {
+    logError("signup", "API request failed", e);
     return NextResponse.json(
       { detail: "Network error" },
       { status: 502 }

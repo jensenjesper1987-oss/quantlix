@@ -142,7 +142,7 @@ async def _do_signup(body: SignupRequest, db: AsyncSession) -> SignupResponse:
 
     verification_link = None
     if email_enabled and settings.dev_return_verification_link:
-        verification_link = f"{settings.app_base_url.rstrip('/')}/auth/verify?token={token}"
+        verification_link = f"{settings.portal_base_url.rstrip('/')}/verify?token={token}"
     return SignupResponse(
         message=message,
         email=body.email,
@@ -247,7 +247,7 @@ async def resend_verification(
 
     out: dict = {"message": "Verification email sent. Check your inbox."}
     if settings.dev_return_verification_link:
-        out["verification_link"] = f"{settings.app_base_url.rstrip('/')}/auth/verify?token={token}"
+        out["verification_link"] = f"{settings.portal_base_url.rstrip('/')}/verify?token={token}"
     return out
 
 

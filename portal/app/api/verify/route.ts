@@ -1,27 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
+import { COOKIE_NAME } from "@/lib/api";
 import { logError } from "@/lib/logger";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-const COOKIE_NAME = "quantlix_api_key";
 
-export async function POST(request: NextRequest) {
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const token = searchParams.get("token");
+  if (!token) {
+    return NextResponse.json(
+      { ok: false, detail: "Missing token" },
+      { status: 400 }
+    );
+  }
+
   try {
-    const body = await request.json();
-    const forwardedFor = request.headers.get("x-forwarded-for");
-    const realIp = request.headers.get("x-real-ip");
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
-    if (forwardedFor) headers["X-Forwarded-For"] = forwardedFor;
-    if (realIp) headers["X-Real-IP"] = realIp;
-    const res = await fetch(`${API_URL}/auth/login`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(body),
-    });
+    const res = await fetch(`${API_URL}/auth/verify?token=${encodeURIComponent(token)}`);
     const data = await res.json().catch(() => ({}));
 
     if (!res.ok) {
       return NextResponse.json(
-        { detail: data.detail || "Login failed" },
+        { ok: false, detail: data.detail || "Verification failed" },
         { status: res.status }
       );
     }
@@ -36,9 +35,9 @@ export async function POST(request: NextRequest) {
     });
     return response;
   } catch (e) {
-    logError("login", "API request failed", e);
+    logError("verify", "API request failed", e);
     return NextResponse.json(
-      { detail: "Network error" },
+      { ok: false, detail: "Network error" },
       { status: 502 }
     );
   }

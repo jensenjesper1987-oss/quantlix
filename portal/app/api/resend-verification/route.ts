@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logError } from "@/lib/logger";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -26,6 +27,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(data);
   } catch (e) {
+    logError("resend-verification", "API request failed", e);
     return NextResponse.json(
       { detail: "Network error" },
       { status: 502 }

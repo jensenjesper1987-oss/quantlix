@@ -3,16 +3,24 @@ Quantlix — REST API
 POST /auth/signup, POST /auth/login, POST /deploy, POST /run, GET /status, GET /usage
 """
 import asyncio
+import logging
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
+from api.config import settings
+from api.logging_config import setup_logging
+
+setup_logging(settings.log_level)
+logger = logging.getLogger(__name__)
 from prometheus_client import make_asgi_app
 from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.config import settings
 from api.db import Base, engine, async_session_maker
 from api.metrics import (
     quantlix_usage_compute_seconds_total,
@@ -91,8 +99,8 @@ async def lifespan(app: FastAPI):
             try:
                 async with async_session_maker() as session:
                     await _refresh_metrics(session)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.exception("Metrics refresh failed: %s", e)
             await asyncio.sleep(60)
 
     # Initial refresh + background task
@@ -115,6 +123,39 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
+    """Log HTTP exceptions (especially 5xx) and return JSON response."""
+    if exc.status_code >= 500:
+        logger.error(
+            "HTTP %d: %s %s - %s",
+            exc.status_code,
+            request.method,
+            request.url.path,
+            exc.detail,
+        )
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": str(exc.detail) if exc.detail else "Internal server error"},
+    )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    """Log unhandled exceptions and return 500."""
+    logger.exception(
+        "Unhandled exception: %s %s - %s",
+        request.method,
+        request.url.path,
+        exc,
+    )
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"},
+    )
+
 
 def _get_cors_origins() -> list[str]:
     origins = list(DEFAULT_CORS_ORIGINS)
