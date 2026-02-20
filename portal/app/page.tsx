@@ -15,8 +15,7 @@ export default function Home() {
               Deploy AI models in seconds
             </h1>
             <p className="max-w-lg text-lg text-slate-400">
-              Quantlix is the simplest way to run AI workloads without cloud
-              complexity.
+              No servers. No clusters. No DevOps.
             </p>
             <div className="flex flex-wrap items-center gap-4">
               <Link href="/signup">
@@ -46,7 +45,7 @@ export default function Home() {
           </div>
           <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-4 font-mono text-sm">
             <pre className="overflow-x-auto text-slate-300">
-{`$ pip install quantlix
+              {`$ pip install quantlix
 $ quantlix login
 $ quantlix deploy qx-example --api-key <your_api_key>
 $ quantlix run <id> -i '{"prompt":"Hello"}' --api-key <your_api_key>`}
@@ -107,7 +106,8 @@ $ quantlix run <id> -i '{"prompt":"Hello"}' --api-key <your_api_key>`}
             Deployed by developers at startups & labs
           </span>
           <blockquote className="max-w-md text-sm italic text-slate-500">
-            &ldquo;Deploy FastAPI + PyTorch in 30 seconds. No cloud config.&rdquo;
+            &ldquo;Deploy FastAPI + PyTorch in 30 seconds. No cloud
+            config.&rdquo;
           </blockquote>
         </div>
       </section>
@@ -182,7 +182,10 @@ $ quantlix run <id> -i '{"prompt":"Hello"}' --api-key <your_api_key>`}
       </section>
 
       {/* 4. Live demo + Code example */}
-      <section id="live-demo" className="mx-auto max-w-6xl px-4 py-24 scroll-mt-24">
+      <section
+        id="live-demo"
+        className="mx-auto max-w-6xl px-4 py-24 scroll-mt-24"
+      >
         <h2 className="mb-4 text-center text-2xl font-semibold text-slate-100">
           Try a live demo
         </h2>
@@ -205,14 +208,15 @@ $ quantlix run <id> -i '{"prompt":"Hello"}' --api-key <your_api_key>`}
   -d '{"deployment_id": "YOUR_DEPLOYMENT_ID", "input": {"prompt": "Hello, world!"}}'`}
           />
           <pre className="overflow-x-auto text-slate-300">
-{`curl -X POST https://api.quantlix.ai/run \\
+            {`curl -X POST https://api.quantlix.ai/run \\
   -H "X-API-Key: YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{"deployment_id": "YOUR_DEPLOYMENT_ID", "input": {"prompt": "Hello, world!"}}'`}
           </pre>
         </div>
         <p className="mt-4 text-center text-sm text-slate-500">
-          Sign up, deploy the demo model, and get your API key + deployment ID from the dashboard.
+          Sign up, deploy the demo model, and get your API key + deployment ID
+          from the dashboard.
         </p>
       </section>
 
@@ -225,7 +229,10 @@ $ quantlix run <id> -i '{"prompt":"Hello"}' --api-key <your_api_key>`}
           {[
             { title: "Instant Deploy", desc: "Deploy in seconds, not hours" },
             { title: "Auto Scaling", desc: "Scale to zero when idle" },
-            { title: "Transparent Pricing", desc: "Pay per usage, no surprises" },
+            {
+              title: "Transparent Pricing",
+              desc: "Pay per usage, no surprises",
+            },
             { title: "GPU Optimized", desc: "Built for inference workloads" },
             { title: "API-first", desc: "REST API, no vendor lock-in" },
           ].map((f) => (
@@ -330,7 +337,11 @@ $ quantlix run <id> -i '{"prompt":"Hello"}' --api-key <your_api_key>`}
         <div className="grid gap-6 md:grid-cols-4">
           {[
             { name: "Free", price: "€0", desc: "100k tokens, 1h compute" },
-            { name: "Starter", price: "€9/mo", desc: "500k tokens, 5h compute, priority queue" },
+            {
+              name: "Starter",
+              price: "€9/mo",
+              desc: "500k tokens, 5h compute, priority queue",
+            },
             {
               name: "Pro",
               price: "€19/mo",
@@ -368,9 +379,7 @@ $ quantlix run <id> -i '{"prompt":"Hello"}' --api-key <your_api_key>`}
           <h2 className="text-2xl font-semibold text-slate-100">
             Start deploying
           </h2>
-          <p className="mt-4 text-slate-400">
-            pip install quantlix
-          </p>
+          <p className="mt-4 text-slate-400">pip install quantlix</p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
             <a href="#live-demo">
               <Button variant="outline" size="lg">

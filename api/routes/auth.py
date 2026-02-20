@@ -117,7 +117,10 @@ async def _do_signup(body: SignupRequest, db: AsyncSession) -> SignupResponse:
                     "Account created. Email not configured (set SWEEGO_API_KEY or SMTP credentials). "
                     "Contact support@quantlix.ai to verify your account."
                 )
-        except Exception:
+        except Exception as e:
+            logging.getLogger(__name__).exception(
+                "Signup: verification email failed for %s: %s", body.email, e
+            )
             message = (
                 "Account created. We couldn't send the verification email (check email config). "
                 "Contact support@quantlix.ai to verify your account."

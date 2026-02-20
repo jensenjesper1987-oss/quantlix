@@ -5,7 +5,7 @@ import { Nav } from "@/components/nav";
 export const metadata: Metadata = {
   title: "Quantlix — Deploy AI models in seconds",
   description:
-    "The simplest way to run AI workloads without cloud complexity. Developer-first, EU-hosted, predictable pricing.",
+    "No servers. No clusters. No DevOps. Developer-first, EU-hosted, Predictable pricing.",
   icons: {
     icon: "/icon.png",
   },

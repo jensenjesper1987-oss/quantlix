@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     # Otherwise use SMTP with smtp_user/smtp_password.
     email_enabled: bool = True
     sweego_api_key: str = ""  # When set, use Sweego HTTP API instead of SMTP
-    sweego_auth_type: str = "api_token"  # "api_token" (Api-Token), "api_key" (Api-Key), or "bearer" (Authorization: Bearer)
+    sweego_auth_type: str = "api_key"  # "api_key" (Api-Key, Sweego default), "api_token" (Api-Token), or "bearer" (Authorization: Bearer)
     smtp_host: str = "smtp.sweego.io"
     smtp_port: int = 587
     smtp_user: str = ""

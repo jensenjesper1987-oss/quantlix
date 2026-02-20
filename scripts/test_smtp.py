@@ -29,7 +29,7 @@ async def test_api(to_email: str | None = None):
     from_name = os.getenv("SMTP_FROM_NAME", "Quantlix")
     recipient = to_email or from_email
 
-    auth_type = os.getenv("SWEEGO_AUTH_TYPE", "api_token")
+    auth_type = os.getenv("SWEEGO_AUTH_TYPE", "api_key")
     print("Testing Sweego API (https://api.sweego.io/send)")
     print(f"Auth type: {auth_type}")
     print(f"To: {recipient}")
@@ -105,8 +105,14 @@ async def main():
     to_email = sys.argv[1] if len(sys.argv) > 1 else None
     if os.getenv("SWEEGO_API_KEY"):
         await test_api(to_email)
-    else:
+    elif os.getenv("SMTP_USER") and os.getenv("SMTP_PASSWORD"):
         await test_smtp()
+    else:
+        print("ERROR: No email config found.")
+        print("  For Sweego API: add sweego-api-key to the 'api' secret in K8s:")
+        print("    kubectl patch secret api -n quantlix -p '{\"stringData\":{\"sweego-api-key\":\"YOUR_KEY\"}}'")
+        print("  For SMTP: set SMTP_USER and SMTP_PASSWORD in the api secret.")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

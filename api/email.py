@@ -32,10 +32,10 @@ async def _send_via_sweego_api(to_email: str, subject: str, body: str) -> None:
     }
     if settings.sweego_auth_type == "bearer":
         auth_header = ("Authorization", f"Bearer {settings.sweego_api_key}")
-    elif settings.sweego_auth_type == "api_key":
-        auth_header = ("Api-Key", settings.sweego_api_key)
+    elif settings.sweego_auth_type == "api_token":
+        auth_header = ("Api-Token", settings.sweego_api_key)
     else:
-        auth_header = ("Api-Token", settings.sweego_api_key)  # default: api_token
+        auth_header = ("Api-Key", settings.sweego_api_key)  # default: api_key (Sweego docs)
     async with httpx.AsyncClient(timeout=30.0) as client:
         resp = await client.post(
             SWEEGO_API_URL,
@@ -53,7 +53,10 @@ async def _send_via_sweego_api(to_email: str, subject: str, body: str) -> None:
                 resp.status_code,
                 body_preview,
             )
-        resp.raise_for_status()
+            raise RuntimeError(
+                f"Sweego API error {resp.status_code}: {body_preview}"
+            ) from None
+        return
 
 
 async def _send_email(to_email: str, subject: str, body: str) -> None:
