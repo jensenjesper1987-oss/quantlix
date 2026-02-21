@@ -40,6 +40,12 @@ export function Nav() {
             CLI
           </Link>
           <Link
+            href="/examples"
+            className="text-sm text-slate-400 hover:text-slate-200"
+          >
+            Examples
+          </Link>
+          <Link
             href="/pricing"
             className="text-sm text-slate-400 hover:text-slate-200"
           >

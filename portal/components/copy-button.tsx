@@ -3,7 +3,13 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
-export function CopyButton({ text }: { text: string }) {
+export function CopyButton({
+  text,
+  inline,
+}: {
+  text: string;
+  inline?: boolean;
+}) {
   const [copied, setCopied] = useState(false);
 
   async function handleCopy() {
@@ -16,7 +22,11 @@ export function CopyButton({ text }: { text: string }) {
     <Button
       variant="ghost"
       size="sm"
-      className="absolute right-4 top-4 h-8 text-xs"
+      className={
+        inline
+          ? "h-8 text-xs"
+          : "absolute right-4 top-4 h-8 text-xs"
+      }
       onClick={handleCopy}
     >
       {copied ? "Copied!" : "Copy"}
