@@ -260,8 +260,12 @@ type RevisionItem = {
   created_at: string | null;
 };
 
+const DEPLOYMENTS_PAGE_SIZE = 10;
+
 function DeploymentsSection() {
   const [deployments, setDeployments] = useState<DeploymentItem[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [revisions, setRevisions] = useState<Record<string, RevisionItem[]>>({});
@@ -269,17 +273,27 @@ function DeploymentsSection() {
   const [rollbackLoading, setRollbackLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const refresh = useCallback(() => {
-    fetch("/api/deployments")
-      .then((r) => (r.ok ? r.json() : { deployments: [] }))
-      .then((data) => setDeployments(data.deployments || []))
-      .catch(() => setDeployments([]))
+  const refresh = useCallback((pageNum: number = page) => {
+    const offset = (pageNum - 1) * DEPLOYMENTS_PAGE_SIZE;
+    fetch(
+      `/api/deployments?limit=${DEPLOYMENTS_PAGE_SIZE}&offset=${offset}`
+    )
+      .then((r) => (r.ok ? r.json() : { deployments: [], total: 0 }))
+      .then((data) => {
+        setDeployments(data.deployments || []);
+        setTotal(data.total ?? 0);
+      })
+      .catch(() => {
+        setDeployments([]);
+        setTotal(0);
+      })
       .finally(() => setLoading(false));
-  }, []);
+  }, [page]);
 
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    setLoading(true);
+    refresh(page);
+  }, [page, refresh]);
 
   async function loadRevisions(id: string) {
     if (revisions[id]) return;
@@ -439,6 +453,39 @@ function DeploymentsSection() {
           </div>
         ))}
       </div>
+      {total > DEPLOYMENTS_PAGE_SIZE && (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-4 border-t border-slate-800 pt-4">
+          <p className="text-sm text-slate-500">
+            Showing {(page - 1) * DEPLOYMENTS_PAGE_SIZE + 1}–
+            {Math.min(page * DEPLOYMENTS_PAGE_SIZE, total)} of {total}
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+            >
+              Previous
+            </Button>
+            <span className="text-sm text-slate-400">
+              Page {page} of {Math.ceil(total / DEPLOYMENTS_PAGE_SIZE)}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page >= Math.ceil(total / DEPLOYMENTS_PAGE_SIZE)}
+              onClick={() =>
+                setPage((p) =>
+                  Math.min(Math.ceil(total / DEPLOYMENTS_PAGE_SIZE), p + 1)
+                )
+              }
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

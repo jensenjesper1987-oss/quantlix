@@ -10,11 +10,13 @@ export async function GET(request: NextRequest) {
   }
 
   const { searchParams } = new URL(request.url);
-  const limit = searchParams.get("limit") || "50";
+  const limit = searchParams.get("limit") || "10";
+  const offset = searchParams.get("offset") || "0";
 
-  const res = await fetch(`${API_URL}/deployments?limit=${limit}`, {
-    headers: { "X-API-Key": apiKey },
-  });
+  const res = await fetch(
+    `${API_URL}/deployments?limit=${limit}&offset=${offset}`,
+    { headers: { "X-API-Key": apiKey } }
+  );
   const data = await res.json().catch(() => ({}));
 
   if (!res.ok) {

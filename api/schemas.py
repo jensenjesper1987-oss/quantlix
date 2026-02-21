@@ -73,6 +73,7 @@ class DeploymentListItem(BaseModel):
 
 class DeploymentListResponse(BaseModel):
     deployments: list[DeploymentListItem]
+    total: int = 0
 
 
 class DeploymentRevisionItem(BaseModel):

@@ -23,9 +23,18 @@ router = APIRouter()
 async def list_deployments(
     user: CurrentUser,
     db: Annotated[AsyncSession, Depends(get_db)],
-    limit: int = Query(50, ge=1, le=100),
+    limit: int = Query(10, ge=1, le=100),
+    offset: int = Query(0, ge=0),
 ):
-    """List user's deployments with revision counts."""
+    """List user's deployments with revision counts. Supports pagination."""
+    # Total count
+    count_result = await db.scalar(
+        select(func.count(func.distinct(Deployment.id))).where(
+            Deployment.user_id == user.id
+        )
+    )
+    total = count_result or 0
+
     result = await db.execute(
         select(
             Deployment.id,
@@ -40,6 +49,7 @@ async def list_deployments(
         .group_by(Deployment.id)
         .order_by(Deployment.updated_at.desc())
         .limit(limit)
+        .offset(offset)
     )
     rows = result.all()
     return DeploymentListResponse(
@@ -53,7 +63,8 @@ async def list_deployments(
                 revision_count=r.revision_count or 0,
             )
             for r in rows
-        ]
+        ],
+        total=total,
     )
 
 
