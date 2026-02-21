@@ -34,6 +34,9 @@ from api.metrics import (
 from api.models import UsageRecord, User
 from api.routes import auth, billing, deploy, deployments, demo, health, jobs, run, status, usage
 
+# Register guardrail metrics with Prometheus
+import api.guardrails.metrics  # noqa: F401
+
 DEFAULT_CORS_ORIGINS = [
     "http://localhost:3000",
     "http://localhost:3001",
@@ -93,6 +96,13 @@ async def lifespan(app: FastAPI):
         await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS near_limit_email_sent_at TIMESTAMPTZ"))
         await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS idle_email_sent_at TIMESTAMPTZ"))
         await conn.run_sync(Base.metadata.create_all)  # Create deployment_revisions if missing
+        # Guardrails & scoring on jobs
+        await conn.execute(text("ALTER TABLE jobs ADD COLUMN IF NOT EXISTS score_input DOUBLE PRECISION"))
+        await conn.execute(text("ALTER TABLE jobs ADD COLUMN IF NOT EXISTS score_output DOUBLE PRECISION"))
+        await conn.execute(text("ALTER TABLE jobs ADD COLUMN IF NOT EXISTS score_final DOUBLE PRECISION"))
+        await conn.execute(text("ALTER TABLE jobs ADD COLUMN IF NOT EXISTS guardrail_blocked BOOLEAN DEFAULT FALSE"))
+        await conn.execute(text("ALTER TABLE jobs ADD COLUMN IF NOT EXISTS guardrail_flags JSONB"))
+        await conn.execute(text("ALTER TABLE jobs ADD COLUMN IF NOT EXISTS policy_action VARCHAR(20)"))
 
     async def update_metrics():
         """Periodically update Prometheus metrics for users, usage, tiers."""

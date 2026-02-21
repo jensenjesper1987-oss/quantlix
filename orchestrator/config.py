@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     inference_url: str = ""  # When mock_k8s: call this for real inference (e.g. http://inference:8080)
     inference_image: str = "quantlix-inference:latest"  # K8s Job container image
 
+    # Guardrails (used by worker; must match api.config)
+    guardrail_block_window_seconds: int = 300
+
     @property
     def database_url(self) -> str:
         return (

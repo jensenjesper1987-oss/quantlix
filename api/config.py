@@ -48,6 +48,12 @@ class Settings(BaseSettings):
     # Logging (DEBUG, INFO, WARNING, ERROR)
     log_level: str = "INFO"
 
+    # Guardrails
+    guardrail_timeout_seconds: float = 5.0
+    guardrail_fail_open: bool = True  # Allow on error; False = block on error
+    guardrail_block_max_per_window: int = 5
+    guardrail_block_window_seconds: int = 300
+
     # Stripe
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""

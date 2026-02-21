@@ -3,7 +3,7 @@ from datetime import date, datetime, timedelta, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import Date, cast, func, select
+from sqlalchemy import Date, cast, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.auth import CurrentUser
@@ -45,6 +45,17 @@ async def get_usage(
     )
     row = result.one()
 
+    blocked_result = await db.execute(
+        select(func.count(Job.id)).where(
+            Job.user_id == user.id,
+            Job.status == JobStatus.FAILED.value,
+            Job.created_at >= start_dt,
+            Job.created_at <= end_dt,
+            or_(Job.guardrail_blocked == True, Job.policy_action == "block"),
+        )
+    )
+    blocked_count = blocked_result.scalar() or 0
+
     token_limit, cpu_limit, gpu_limit = await get_limits_for_user(db, user.id)
     gpu_used = float(row.gpu_seconds)
     gpu_overage = max(0, gpu_used - gpu_limit) if gpu_limit > 0 else 0
@@ -56,6 +67,7 @@ async def get_usage(
         compute_seconds=float(row.compute_seconds),
         gpu_seconds=float(row.gpu_seconds),
         job_count=int(row.job_count),
+        blocked_jobs_count=int(blocked_count),
         start_date=start_date,
         end_date=end_date,
         tokens_limit=token_limit if token_limit > 0 else None,

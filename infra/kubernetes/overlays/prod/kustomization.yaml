@@ -41,7 +41,7 @@ patches:
         value: 2
       - op: replace
         path: /spec/template/spec/containers/0/imagePullPolicy
-        value: IfNotPresent
+        value: Always
       - op: replace
         path: /spec/template/spec/containers/0/env/5/value
         value: "false"

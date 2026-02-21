@@ -34,6 +34,7 @@ async def get_status(
             created_at=deployment.created_at,
             updated_at=deployment.updated_at,
             error_message=deployment.error_message,
+            config=deployment.config or {},
         )
 
     # Try job
@@ -45,6 +46,7 @@ async def get_status(
     )
     job = result.scalar_one_or_none()
     if job:
+        retry_after = 60 if (job.guardrail_blocked or job.policy_action == "block") else None
         return StatusResponse(
             id=job.id,
             type="job",
@@ -55,6 +57,9 @@ async def get_status(
             output_data=job.output_data,
             tokens_used=job.tokens_used,
             compute_seconds=job.compute_seconds,
+            guardrail_blocked=job.guardrail_blocked,
+            policy_action=job.policy_action,
+            retry_after_seconds=retry_after,
         )
 
     raise HTTPException(

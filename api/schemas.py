@@ -104,6 +104,10 @@ class RunResponse(BaseModel):
     job_id: str
     status: str
     message: str = "Inference job queued"
+    block_rate: dict | None = Field(
+        None,
+        description="Proximity to block limit: blocks_in_window, max_blocks (only when > 0 blocks)",
+    )
 
 
 # --- Jobs (list) ---
@@ -115,6 +119,10 @@ class JobListItem(BaseModel):
     compute_seconds: float | None = None
     created_at: datetime | None = None
     completed_at: datetime | None = None
+    error_message: str | None = Field(None, description="Error or block reason when failed")
+    guardrail_blocked: bool | None = Field(None, description="True if blocked by guardrails")
+    policy_action: str | None = Field(None, description="allow, block, or log")
+    retry_after_seconds: int | None = Field(None, description="Suggested wait before retry when blocked")
 
 
 class JobListResponse(BaseModel):
@@ -129,10 +137,14 @@ class StatusResponse(BaseModel):
     created_at: datetime | None = None
     updated_at: datetime | None = None
     error_message: str | None = None
+    config: dict | None = Field(None, description="Deployment config (when type=deployment)")
     # Job-specific
     output_data: dict | None = None
     tokens_used: int | None = None
     compute_seconds: float | None = None
+    guardrail_blocked: bool | None = Field(None, description="True if blocked by guardrails")
+    policy_action: str | None = Field(None, description="allow, block, or log")
+    retry_after_seconds: int | None = Field(None, description="Suggested wait before retry when blocked")
 
 
 # --- Auth ---
@@ -278,6 +290,7 @@ class UsageResponse(BaseModel):
     compute_seconds: float = 0.0
     gpu_seconds: float = 0.0
     job_count: int = 0
+    blocked_jobs_count: int = Field(0, description="Jobs blocked by guardrails or policy (no charge)")
     start_date: date | None = None
     end_date: date | None = None
     # Limits (0 = unlimited)

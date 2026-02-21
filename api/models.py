@@ -134,6 +134,13 @@ class Job(Base):
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     tokens_used: Mapped[int | None] = mapped_column(Integer, nullable=True)
     compute_seconds: Mapped[float | None] = mapped_column(Float, nullable=True)
+    # Guardrails & scoring
+    score_input: Mapped[float | None] = mapped_column(Float, nullable=True)
+    score_output: Mapped[float | None] = mapped_column(Float, nullable=True)
+    score_final: Mapped[float | None] = mapped_column(Float, nullable=True)
+    guardrail_blocked: Mapped[bool | None] = mapped_column(default=False, nullable=True)
+    guardrail_flags: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    policy_action: Mapped[str | None] = mapped_column(String(20), nullable=True)  # allow, block, log
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
